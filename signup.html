@@ -143,23 +143,19 @@
             </div>
           </div>
 
-          <div class="input-group">
+          <div class="input-group" id="department-group" style="display:none;">
             <label for="department">
               <i class="fas fa-building"></i> Department / Section
             </label>
             <div class="input-wrap">
               <select id="department" name="department">
                 <option value="" disabled selected>Select department or section</option>
-                <option>Administration Office</option>
-                <option>Guidance &amp; Counseling</option>
-                <option>Science Department</option>
-                <option>Mathematics Department</option>
-                <option>English Department</option>
-                <option>Filipino Department</option>
-                <option>Social Studies Department</option>
-                <option>Physical Education</option>
-                <option>ICT Department</option>
-                <option>Other</option>
+                <option value="BSIT">Bachelor of Science in Information Technology (BSIT)</option>
+                <option value="BSBA">Bachelor of Science in Business Administration (BSBA)</option>
+                <option value="BSCRIM">Bachelor of Science in Criminology (BSCRIM)</option>
+                <option value="BSHTM">Bachelor of Science in Hospitality and Tourism Management (BSHTM)</option>
+                <option value="BSEd">Bachelor of Secondary Education (BSEd)</option>
+                <option value="BEEd">Bachelor of Elementary Education (BEEd)</option>
               </select>
             </div>
           </div>
@@ -193,6 +189,33 @@
     </div>
 
   </div>
+
+  <script>
+    const tabStudent = document.getElementById('tab_student');
+    const tabTeacher = document.getElementById('tab_teacher');
+    const tabCounselor = document.getElementById('tab_counselor');
+    const tabStaff = document.getElementById('tab_staff');
+    const deptGroup = document.getElementById('department-group');
+    const deptSelect = document.getElementById('department');
+
+    function toggleDepartment() {
+      if (tabStudent.checked) {
+        deptGroup.style.display = '';
+        deptSelect.setAttribute('required', 'required');
+      } else {
+        deptGroup.style.display = 'none';
+        deptSelect.removeAttribute('required');
+        deptSelect.value = '';
+      }
+    }
+
+    [tabTeacher, tabCounselor, tabStaff, tabStudent].forEach(tab => {
+      tab.addEventListener('change', toggleDepartment);
+    });
+
+    // Run on page load to reflect the default selected tab
+    toggleDepartment();
+  </script>
 
 </body>
 </html>

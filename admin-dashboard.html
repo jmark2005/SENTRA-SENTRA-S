@@ -6,6 +6,17 @@
   <title>Admin Dashboard — SENTRA</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    @keyframes pulse-badge {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.15); }
+    }
+    #incidentBadge { animation: pulse-badge 1.4s infinite; }
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+  </style>
 </head>
 <body class="dash-page">
   <div class="dash-layout">
@@ -23,7 +34,7 @@
         <a class="dash-nav-item active" data-section="overview"><i class="fas fa-gauge-high"></i> Overview</a>
         <div class="dash-nav-section">Management</div>
         <a class="dash-nav-item" data-section="students"><i class="fas fa-id-card"></i> Student Information</a>
-        <a class="dash-nav-item" data-section="incidents"><i class="fas fa-file-circle-exclamation"></i> Incident Reporting</a>
+        <a class="dash-nav-item" data-section="incidents"><i class="fas fa-file-circle-exclamation"></i> Incident Reporting <span id="incidentBadge" style="display:none;background:#c0392b;color:#fff;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:4px;vertical-align:middle;"></span></a>
         <a class="dash-nav-item" data-section="attendance"><i class="fas fa-calendar-check"></i> Attendance Monitoring</a>
         <a class="dash-nav-item" data-section="support"><i class="fas fa-hand-holding-heart"></i> Support Services</a>
         <div class="dash-nav-section">Campus Tools</div>
@@ -65,7 +76,7 @@
             </div>
             <div class="stat-card">
               <div class="stat-card-ico red"><i class="fas fa-triangle-exclamation"></i></div>
-              <div class="stat-card-body"><small>Open Incidents</small><strong>3</strong></div>
+              <div class="stat-card-body"><small>Open Incidents</small><strong id="statIncidents">0</strong></div>
             </div>
             <div class="stat-card">
               <div class="stat-card-ico green"><i class="fas fa-calendar-check"></i></div>
@@ -113,11 +124,31 @@
 
         <!-- INCIDENT REPORTING -->
         <section class="section-panel" id="incidents">
-          <div class="placeholder-panel">
-            <div class="ph-icon"><i class="fas fa-file-circle-exclamation"></i></div>
-            <h3>Safety Incident Reporting &amp; Monitoring</h3>
-            <p>Allows designated school personnel to record, update, and monitor student safety incidents — including incident details, date, people involved, actions taken, and current status.</p>
-            <span class="ph-soon">Coming Soon</span>
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-file-circle-exclamation"></i> Safety Incident Reporting &amp; Monitoring</div>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <select id="incidentFilterStatus" onchange="renderAdminIncidents()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Under Investigation">Under Investigation</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
+            </div>
+            <p class="dash-muted-intro">Monitor and respond to student-reported safety incidents. Update status and record actions taken for each report.</p>
+            <div id="incidentNewBanner" style="display:none;align-items:center;gap:10px;background:#fdf0f0;border:1px solid #f5c6cb;color:#c0392b;border-radius:10px;padding:11px 16px;margin-bottom:14px;font-size:.87rem;font-weight:600;animation:fadeInUp .3s ease;"></div>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Incident</th><th>Reported By</th><th>Date</th><th>Severity</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminIncidentTableBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:14px;font-size:.82rem;color:var(--muted);" id="adminIncidentCount"></div>
           </div>
         </section>
 
@@ -188,6 +219,18 @@
     </div>
   </div>
 
+  <!-- Incident Detail Modal -->
+  <div class="modal-overlay" id="adminIncidentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="adminIncidentModalTitle"><i class="fas fa-file-circle-exclamation"></i> Incident Report</h3>
+        <button class="modal-close" id="closeAdminIncidentModal"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="adminIncidentModalBody"></div>
+      <div class="modal-footer" id="adminIncidentModalFooter"></div>
+    </div>
+  </div>
+
   <script>
     // --- Auth guard ---
     (function () {
@@ -201,12 +244,12 @@
 
     // --- Sample student records (in-memory) ---
     let students = [
-      { id: 's1', fullName: 'Juan dela Cruz', studentId: '2024-00123', dob: 'March 12, 2006', gender: 'Male', email: 'juan.delacruz@sentra.edu.ph', phone: '0917-123-4567', guardian: 'Mrs. Maria dela Cruz (Mother)', guardianPhone: '0917-765-4321', program: 'Senior High — STEM', yearLevel: 'Grade 11', section: 'Rizal', department: 'Science Department', adviser: 'Mr. Antonio Reyes', status: 'Enrolled', bloodType: 'O+', allergies: 'None', medical: 'Asthma (mild)', ecName: 'Mrs. Maria dela Cruz', ecRel: 'Mother', ecPhone: '0917-765-4321' },
-      { id: 's2', fullName: 'Maria Santos', studentId: '2024-00124', dob: 'July 22, 2006', gender: 'Female', email: 'maria.santos@sentra.edu.ph', phone: '0918-234-5678', guardian: 'Mr. Pedro Santos (Father)', guardianPhone: '0918-876-5432', program: 'Senior High — ABM', yearLevel: 'Grade 11', section: 'Bonifacio', department: 'Mathematics Department', adviser: 'Ms. Liza Cruz', status: 'Enrolled', bloodType: 'A+', allergies: 'Peanuts', medical: 'None', ecName: 'Mr. Pedro Santos', ecRel: 'Father', ecPhone: '0918-876-5432' },
-      { id: 's3', fullName: 'Pedro Reyes', studentId: '2024-00125', dob: 'January 5, 2005', gender: 'Male', email: 'pedro.reyes@sentra.edu.ph', phone: '0919-345-6789', guardian: 'Mrs. Rosa Reyes (Mother)', guardianPhone: '0919-987-6543', program: 'Senior High — HUMSS', yearLevel: 'Grade 12', section: 'Aguinaldo', department: 'English Department', adviser: 'Mr. Jose Garcia', status: 'On Leave', bloodType: 'B+', allergies: 'None', medical: 'None', ecName: 'Mrs. Rosa Reyes', ecRel: 'Mother', ecPhone: '0919-987-6543' },
-      { id: 's4', fullName: 'Ana Lim', studentId: '2024-00126', dob: 'November 14, 2007', gender: 'Female', email: 'ana.lim@sentra.edu.ph', phone: '0920-456-7890', guardian: 'Mrs. Linda Lim (Mother)', guardianPhone: '0920-111-2222', program: 'Junior High', yearLevel: 'Grade 10', section: 'Mabini', department: 'Science Department', adviser: 'Ms. Ana Torres', status: 'Enrolled', bloodType: 'O-', allergies: 'Seafood', medical: 'None', ecName: 'Mrs. Linda Lim', ecRel: 'Mother', ecPhone: '0920-111-2222' },
-      { id: 's5', fullName: 'Jose Garcia', studentId: '2024-00127', dob: 'May 30, 2005', gender: 'Male', email: 'jose.garcia@sentra.edu.ph', phone: '0921-567-8901', guardian: 'Mr. Ramon Garcia (Father)', guardianPhone: '0921-222-3333', program: 'Senior High — ICT', yearLevel: 'Grade 12', section: 'Luna', department: 'ICT Department', adviser: 'Mr. Carlo Mendoza', status: 'Enrolled', bloodType: 'AB+', allergies: 'None', medical: 'Color blindness', ecName: 'Mr. Ramon Garcia', ecRel: 'Father', ecPhone: '0921-222-3333' },
-      { id: 's6', fullName: 'Liza Cruz', studentId: '2024-00128', dob: 'September 9, 2006', gender: 'Female', email: 'liza.cruz@sentra.edu.ph', phone: '0922-678-9012', guardian: 'Mrs. Nora Cruz (Mother)', guardianPhone: '0922-333-4444', program: 'Senior High — GAS', yearLevel: 'Grade 11', section: 'Rizal', department: 'Social Studies Department', adviser: 'Mr. Antonio Reyes', status: 'Inactive', bloodType: 'A-', allergies: 'Dust', medical: 'None', ecName: 'Mrs. Nora Cruz', ecRel: 'Mother', ecPhone: '0922-333-4444' }
+      { id: 's1', fullName: 'Juan dela Cruz', studentId: '2024-00123', dob: 'March 12, 2006', gender: 'Male', email: 'juan.delacruz@sentra.edu.ph', phone: '0917-123-4567', guardian: 'Mrs. Maria dela Cruz (Mother)', guardianPhone: '0917-765-4321', program: 'BSIT', yearLevel: '1st Year', section: '1-A', department: 'Bachelor of Science in Information Technology (BSIT)', status: 'Enrolled', bloodType: 'O+', allergies: 'None', medical: 'Asthma (mild)', ecName: 'Mrs. Maria dela Cruz', ecRel: 'Mother', ecPhone: '0917-765-4321' },
+      { id: 's2', fullName: 'Maria Santos', studentId: '2024-00124', dob: 'July 22, 2006', gender: 'Female', email: 'maria.santos@sentra.edu.ph', phone: '0918-234-5678', guardian: 'Mr. Pedro Santos (Father)', guardianPhone: '0918-876-5432', program: 'BSBA', yearLevel: '2nd Year', section: '2-B', department: 'Bachelor of Science in Business Administration (BSBA)', status: 'Enrolled', bloodType: 'A+', allergies: 'Peanuts', medical: 'None', ecName: 'Mr. Pedro Santos', ecRel: 'Father', ecPhone: '0918-876-5432' },
+      { id: 's3', fullName: 'Pedro Reyes', studentId: '2024-00125', dob: 'January 5, 2005', gender: 'Male', email: 'pedro.reyes@sentra.edu.ph', phone: '0919-345-6789', guardian: 'Mrs. Rosa Reyes (Mother)', guardianPhone: '0919-987-6543', program: 'BSCRIM', yearLevel: '3rd Year', section: '3-C', department: 'Bachelor of Science in Criminology (BSCRIM)', status: 'Enrolled', bloodType: 'B+', allergies: 'None', medical: 'None', ecName: 'Mrs. Rosa Reyes', ecRel: 'Mother', ecPhone: '0919-987-6543' },
+      { id: 's4', fullName: 'Ana Lim', studentId: '2024-00126', dob: 'November 14, 2007', gender: 'Female', email: 'ana.lim@sentra.edu.ph', phone: '0920-456-7890', guardian: 'Mrs. Linda Lim (Mother)', guardianPhone: '0920-111-2222', program: 'BSHTM', yearLevel: '1st Year', section: '1-D', department: 'Bachelor of Science in Hospitality and Tourism Management (BSHTM)', status: 'Enrolled', bloodType: 'O-', allergies: 'Seafood', medical: 'None', ecName: 'Mrs. Linda Lim', ecRel: 'Mother', ecPhone: '0920-111-2222' },
+      { id: 's5', fullName: 'Jose Garcia', studentId: '2024-00127', dob: 'May 30, 2005', gender: 'Male', email: 'jose.garcia@sentra.edu.ph', phone: '0921-567-8901', guardian: 'Mr. Ramon Garcia (Father)', guardianPhone: '0921-222-3333', program: 'BSEd', yearLevel: '4th Year', section: '4-E', department: 'Bachelor of Secondary Education (BSEd)', status: 'Enrolled', bloodType: 'AB+', allergies: 'None', medical: 'Color blindness', ecName: 'Mr. Ramon Garcia', ecRel: 'Father', ecPhone: '0921-222-3333' },
+      { id: 's6', fullName: 'Liza Cruz', studentId: '2024-00128', dob: 'September 9, 2006', gender: 'Female', email: 'liza.cruz@sentra.edu.ph', phone: '0922-678-9012', guardian: 'Mrs. Nora Cruz (Mother)', guardianPhone: '0922-333-4444', program: 'BEEd', yearLevel: '2nd Year', section: '2-F', department: 'Bachelor of Elementary Education (BEEd)', status: 'Enrolled', bloodType: 'A-', allergies: 'Dust', medical: 'None', ecName: 'Mrs. Nora Cruz', ecRel: 'Mother', ecPhone: '0922-333-4444' }
     ];
 
     function initials(name) {
@@ -280,15 +323,29 @@
         '</div>' +
         '<div class="info-section-title"><i class="fas fa-graduation-cap"></i> Academic Information</div>' +
         '<div class="field-row">' +
-          '<div class="field"><label>Program / Course</label><input id="f_program" value="' + (s.program || '') + '"></div>' +
+          '<div class="field"><label>Program / Course</label><select id="f_program">' +
+            '<option value="" disabled ' + (!s.program ? 'selected' : '') + '>Select program</option>' +
+            ['BSIT','BSBA','BSCRIM','BSHTM','BSEd','BEEd'].map(function(p){
+              return '<option ' + (s.program === p ? 'selected' : '') + ' value="' + p + '">' + p + '</option>';
+            }).join('') +
+          '</select></div>' +
           '<div class="field"><label>Year Level</label><input id="f_yearLevel" value="' + (s.yearLevel || '') + '"></div>' +
         '</div>' +
         '<div class="field-row">' +
           '<div class="field"><label>Section</label><input id="f_section" value="' + (s.section || '') + '"></div>' +
-          '<div class="field"><label>Department</label><input id="f_department" value="' + (s.department || '') + '"></div>' +
+          '<div class="field"><label>Department</label><select id="f_department">' +
+            '<option value="" disabled ' + (!s.department ? 'selected' : '') + '>Select department</option>' +
+            ['Bachelor of Science in Information Technology (BSIT)',
+             'Bachelor of Science in Business Administration (BSBA)',
+             'Bachelor of Science in Criminology (BSCRIM)',
+             'Bachelor of Science in Hospitality and Tourism Management (BSHTM)',
+             'Bachelor of Secondary Education (BSEd)',
+             'Bachelor of Elementary Education (BEEd)'].map(function(d){
+               return '<option ' + (s.department === d ? 'selected' : '') + ' value="' + d + '">' + d + '</option>';
+             }).join('') +
+          '</select></div>' +
         '</div>' +
         '<div class="field-row">' +
-          '<div class="field"><label>Adviser</label><input id="f_adviser" value="' + (s.adviser || '') + '"></div>' +
           '<div class="field"><label>Enrollment Status</label><select id="f_status">' + opt('Enrolled') + opt('On Leave') + opt('Inactive') + '</select></div>' +
         '</div>' +
         '<div class="info-section-title"><i class="fas fa-shield-heart"></i> Safety &amp; Medical</div>' +
@@ -314,7 +371,7 @@
         guardian: fieldVal('f_guardian'), guardianPhone: fieldVal('f_guardianPhone'),
         program: fieldVal('f_program'), yearLevel: fieldVal('f_yearLevel'),
         section: fieldVal('f_section'), department: fieldVal('f_department'),
-        adviser: fieldVal('f_adviser'), status: fieldVal('f_status'),
+        status: fieldVal('f_status'),
         bloodType: fieldVal('f_bloodType'), allergies: fieldVal('f_allergies'),
         medical: fieldVal('f_medical'), ecName: fieldVal('f_ecName'),
         ecRel: fieldVal('f_ecRel'), ecPhone: fieldVal('f_ecPhone')
@@ -350,7 +407,7 @@
         '<div class="info-section-title"><i class="fas fa-address-book"></i> Contact &amp; Guardian</div>' +
         '<div class="info-grid">' + item('Email', s.email) + item('Phone', s.phone) + item('Guardian', s.guardian) + item('Guardian Phone', s.guardianPhone) + '</div>' +
         '<div class="info-section-title"><i class="fas fa-graduation-cap"></i> Academic Information</div>' +
-        '<div class="info-grid">' + item('Program', s.program) + item('Year Level', s.yearLevel) + item('Section', s.section) + item('Department', s.department) + item('Adviser', s.adviser) + item('Status', '<span class="status-pill ' + statusClass(s.status) + '">' + s.status + '</span>') + '</div>' +
+        '<div class="info-grid">' + item('Program', s.program) + item('Year Level', s.yearLevel) + item('Section', s.section) + item('Department', s.department) + item('Status', '<span class="status-pill ' + statusClass(s.status) + '">' + s.status + '</span>') + '</div>' +
         '<div class="info-section-title"><i class="fas fa-shield-heart"></i> Safety &amp; Medical</div>' +
         '<div class="info-grid">' + item('Blood Type', s.bloodType) + item('Allergies', s.allergies) + item('Medical Conditions', s.medical) + item('Emergency Contact', s.ecName) + item('Relationship', s.ecRel) + item('Emergency Phone', s.ecPhone) + '</div>';
     }
@@ -373,6 +430,194 @@
 
     renderTable();
 
+    // ============================================================
+    // ADMIN — Incident Reporting (reads from localStorage sentra_incidents)
+    // ============================================================
+    const STORE_KEY = 'sentra_incidents';
+
+    function adminLoadIncidents() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch(e) { return []; }
+    }
+    function adminSaveIncidents(list) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(list));
+    }
+
+    const adminIncidentTypeIcons = {
+      'Physical Injury':'fa-person-falling','Bullying':'fa-user-slash','Harassment':'fa-hand',
+      'Theft':'fa-mask','Vandalism':'fa-spray-can','Medical Emergency':'fa-kit-medical',
+      'Fire / Hazard':'fa-fire','Other':'fa-circle-exclamation'
+    };
+
+    function adminIncidentStatusClass(s) {
+      if (s === 'Resolved')           return 'status-enrolled';
+      if (s === 'Under Investigation') return 'status-onleave';
+      return 'status-inactive';
+    }
+
+    function severityColor(sv) {
+      var map = { Low:'#27ae60', Moderate:'#f39c12', High:'#e67e22', Critical:'#c0392b' };
+      return map[sv] || '#888';
+    }
+
+    function updateIncidentBadge() {
+      const all = adminLoadIncidents();
+      const newCount = all.filter(function(i){ return i.isNew; }).length;
+      const badge = document.getElementById('incidentBadge');
+      if (newCount > 0) {
+        badge.textContent = newCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+      document.getElementById('statIncidents').textContent = all.filter(function(i){ return i.status !== 'Resolved'; }).length;
+    }
+
+    function renderAdminIncidents() {
+      const filterStatus = (document.getElementById('incidentFilterStatus') || {}).value || '';
+      let list = adminLoadIncidents();
+      const totalNew = list.filter(function(i){ return i.isNew; }).length;
+
+      // Show/hide new alert banner
+      var banner = document.getElementById('incidentNewBanner');
+      if (banner) {
+        if (totalNew > 0) {
+          banner.style.display = 'flex';
+          banner.innerHTML = '<i class="fas fa-bell"></i> <strong>' + totalNew + ' new unread report' + (totalNew > 1 ? 's' : '') + '</strong> — click a row to view and respond.';
+        } else {
+          banner.style.display = 'none';
+        }
+      }
+
+      if (filterStatus) list = list.filter(function(i){ return i.status === filterStatus; });
+
+      const body = document.getElementById('adminIncidentTableBody');
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">No incidents found.</td></tr>';
+      } else {
+        body.innerHTML = list.map(function(inc) {
+          const isNew = inc.isNew ? '<span style="background:#c0392b;color:#fff;font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:5px;vertical-align:middle;">NEW</span>' : '';
+          return '<tr' + (inc.isNew ? ' style="background:rgba(192,57,43,.04);"' : '') + '>' +
+            '<td>' +
+              '<div style="display:flex;align-items:center;gap:10px;">' +
+                '<div style="width:36px;height:36px;border-radius:50%;background:rgba(139,0,0,.1);color:var(--maroon-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                  '<i class="fas ' + (adminIncidentTypeIcons[inc.type] || 'fa-circle-exclamation') + '"></i>' +
+                '</div>' +
+                '<div><strong style="font-size:.88rem;">' + inc.title + isNew + '</strong>' +
+                (inc.photo ? ' <i class="fas fa-camera" style="font-size:.72rem;color:#888;margin-left:4px;" title="Photo attached"></i>' : '') +
+                '<br><small style="color:var(--muted);">' + inc.location + '</small></div>' +
+              '</div>' +
+            '</td>' +
+            '<td><strong style="font-size:.85rem;display:block;">' + (inc.reportedBy || '—') + '</strong>' +
+              '<small style="color:var(--muted);">' + (inc.studentId || '') + '</small></td>' +
+            '<td style="font-size:.85rem;white-space:nowrap;">' + inc.date + '<br>' +
+              '<small style="color:var(--muted);">' + (inc.submittedAt ? inc.submittedAt.split(' ').slice(3).join(' ') : '') + '</small></td>' +
+            '<td><span style="font-size:.8rem;font-weight:700;color:' + severityColor(inc.severity) + ';">' + (inc.severity || '—') + '</span></td>' +
+            '<td><span class="status-pill ' + adminIncidentStatusClass(inc.status) + '">' + inc.status + '</span></td>' +
+            '<td><div class="row-actions">' +
+              '<button title="View &amp; Respond" onclick="adminViewIncident(\'' + inc.id + '\')"><i class="fas fa-eye"></i></button>' +
+              '<button title="Delete" class="danger" onclick="adminDeleteIncident(\'' + inc.id + '\')"><i class="fas fa-trash"></i></button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+      }
+      document.getElementById('adminIncidentCount').textContent = 'Showing ' + list.length + ' incident(s).';
+      updateIncidentBadge();
+    }
+
+    function adminViewIncident(id) {
+      const all = adminLoadIncidents();
+      const inc = all.find(function(x){ return x.id === id; });
+      if (!inc) return;
+
+      // Mark as seen
+      if (inc.isNew) {
+        inc.isNew = false;
+        adminSaveIncidents(all);
+        updateIncidentBadge();
+      }
+
+      document.getElementById('adminIncidentModalTitle').innerHTML = '<i class="fas fa-file-circle-exclamation"></i> Incident Report';
+      document.getElementById('adminIncidentModalBody').innerHTML =
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">' +
+          '<div style="width:48px;height:48px;border-radius:50%;background:rgba(139,0,0,.1);color:var(--maroon-dark);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">' +
+            '<i class="fas ' + (adminIncidentTypeIcons[inc.type] || 'fa-circle-exclamation') + '"></i>' +
+          '</div>' +
+          '<div><strong style="font-size:1rem;display:block;">' + inc.title + '</strong>' +
+            '<span class="status-pill ' + adminIncidentStatusClass(inc.status) + '" style="margin-top:4px;display:inline-block;">' + inc.status + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="info-section-title" style="margin-top:0;"><i class="fas fa-circle-info"></i> Incident Details</div>' +
+        '<div class="info-grid">' +
+          '<div class="info-item"><label>Type</label><span>' + inc.type + '</span></div>' +
+          '<div class="info-item"><label>Severity</label><span style="font-weight:700;color:' + severityColor(inc.severity) + ';">' + (inc.severity || '—') + '</span></div>' +
+          '<div class="info-item"><label>Location</label><span>' + inc.location + '</span></div>' +
+          '<div class="info-item"><label>Date</label><span>' + inc.date + '</span></div>' +
+          '<div class="info-item"><label>Submitted</label><span>' + (inc.submittedAt || inc.date) + '</span></div>' +
+          '<div class="info-item" style="grid-column:1/-1;"><label>Description</label><span>' + inc.description + '</span></div>' +
+        '</div>' +
+        (inc.photo ?
+          '<div class="info-section-title"><i class="fas fa-camera"></i> Photo Evidence</div>' +
+          '<img src="' + inc.photo + '" alt="Incident photo" style="width:100%;max-height:300px;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer;margin-bottom:4px;" ' +
+          'onclick="window.open(this.src,\'_blank\')" title="Click to open full size">' +
+          '<div style="font-size:.74rem;color:var(--muted);margin-bottom:4px;text-align:right;"><i class="fas fa-up-right-from-square"></i> Click to open full size</div>' : '') +
+        '<div class="info-section-title"><i class="fas fa-user-graduate"></i> Reported By</div>' +
+        '<div class="info-grid">' +
+          '<div class="info-item"><label>Name</label><span>' + (inc.reportedBy || '—') + '</span></div>' +
+          '<div class="info-item"><label>Student ID</label><span>' + (inc.studentId || '—') + '</span></div>' +
+          '<div class="info-item" style="grid-column:1/-1;"><label>Department / Year &amp; Section</label><span>' + (inc.department || '—') + (inc.yearSection ? ' · ' + inc.yearSection : '') + '</span></div>' +
+        '</div>' +
+        '<div class="info-section-title"><i class="fas fa-clipboard-check"></i> Admin Response</div>' +
+        '<div class="field"><label>Update Status</label>' +
+          '<select id="ai_status" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.9rem;">' +
+            ['Pending','Under Investigation','Resolved'].map(function(s){
+              return '<option ' + (inc.status === s ? 'selected' : '') + '>' + s + '</option>';
+            }).join('') +
+          '</select>' +
+        '</div>' +
+        '<div class="field"><label>Actions Taken</label>' +
+          '<textarea id="ai_action" rows="3" style="width:100%;resize:vertical;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.9rem;font-family:inherit;">' +
+            (inc.actionTaken === '—' ? '' : (inc.actionTaken || '')) +
+          '</textarea>' +
+        '</div>';
+
+      document.getElementById('adminIncidentModalFooter').innerHTML =
+        '<button class="btn-soft btn-sm" id="closeAdminIncidentFooter">Close</button>' +
+        '<button class="btn-maroon btn-sm" onclick="adminSaveResponse(\'' + id + '\')"><i class="fas fa-check"></i> Save Response</button>';
+
+      document.getElementById('adminIncidentModal').classList.add('open');
+      document.getElementById('closeAdminIncidentFooter').addEventListener('click', function(){ document.getElementById('adminIncidentModal').classList.remove('open'); });
+    }
+
+    function adminSaveResponse(id) {
+      const all = adminLoadIncidents();
+      const idx = all.findIndex(function(x){ return x.id === id; });
+      if (idx < 0) return;
+      all[idx].status     = document.getElementById('ai_status').value;
+      all[idx].actionTaken = (document.getElementById('ai_action').value || '').trim() || '—';
+      adminSaveIncidents(all);
+      document.getElementById('adminIncidentModal').classList.remove('open');
+      renderAdminIncidents();
+    }
+
+    function adminDeleteIncident(id) {
+      const all = adminLoadIncidents();
+      const inc = all.find(function(x){ return x.id === id; });
+      if (!inc) return;
+      if (confirm('Delete incident "' + inc.title + '"? This cannot be undone.')) {
+        adminSaveIncidents(all.filter(function(x){ return x.id !== id; }));
+        renderAdminIncidents();
+      }
+    }
+
+    document.getElementById('closeAdminIncidentModal').addEventListener('click', function(){
+      document.getElementById('adminIncidentModal').classList.remove('open');
+    });
+    document.getElementById('adminIncidentModal').addEventListener('click', function(e){
+      if (e.target.id === 'adminIncidentModal') document.getElementById('adminIncidentModal').classList.remove('open');
+    });
+
+    renderAdminIncidents();
+
     // --- Navigation ---
     const navItems = document.querySelectorAll('.dash-nav-item');
     const titles = {
@@ -392,6 +637,7 @@
       navItems.forEach(function (n) { n.classList.toggle('active', n.dataset.section === id); });
       const t = titles[id] || ['Overview', 'Administrator Dashboard'];
       document.getElementById('pageTitle').innerHTML = t[0] + ' <small>' + t[1] + '</small>';
+      if (id === 'incidents') renderAdminIncidents();
       closeSidebar();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -413,6 +659,17 @@
       e.preventDefault();
       sessionStorage.removeItem('sentra_user');
       window.location.href = 'login.html';
+    });
+
+    // Live badge update when student submits from another tab
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'sentra_incidents') {
+        updateIncidentBadge();
+        // If currently viewing incidents panel, refresh the table too
+        if (document.getElementById('incidents').classList.contains('active')) {
+          renderAdminIncidents();
+        }
+      }
     });
   </script>
 </body>
