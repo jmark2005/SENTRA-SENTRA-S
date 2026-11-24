@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign Up — SENTRA</title>
+  <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
 </head>
 <body class="auth-page">
 
@@ -87,6 +88,9 @@
 
         <form class="signup-form" action="#" method="post">
 
+          <!-- Hidden role value updated by JS -->
+          <input type="hidden" id="role-value" name="role" value="teacher" />
+
           <div class="form-row">
             <div class="input-group">
               <label for="fullname">
@@ -143,23 +147,6 @@
             </div>
           </div>
 
-          <div class="input-group" id="department-group" style="display:none;">
-            <label for="department">
-              <i class="fas fa-building"></i> Department / Section
-            </label>
-            <div class="input-wrap">
-              <select id="department" name="department">
-                <option value="" disabled selected>Select department or section</option>
-                <option value="BSIT">Bachelor of Science in Information Technology (BSIT)</option>
-                <option value="BSBA">Bachelor of Science in Business Administration (BSBA)</option>
-                <option value="BSCRIM">Bachelor of Science in Criminology (BSCRIM)</option>
-                <option value="BSHTM">Bachelor of Science in Hospitality and Tourism Management (BSHTM)</option>
-                <option value="BSEd">Bachelor of Secondary Education (BSEd)</option>
-                <option value="BEEd">Bachelor of Elementary Education (BEEd)</option>
-              </select>
-            </div>
-          </div>
-
           <label class="terms-label">
             <input type="checkbox" name="agree_terms" />
             <span class="custom-checkbox"></span>
@@ -168,6 +155,9 @@
             and
             <a href="#" class="terms-link">Privacy Policy</a>
           </label>
+
+          <p id="signup-error" class="error-msg"></p>
+          <p id="signup-success" class="success-msg"></p>
 
           <button type="submit" class="btn-signup">
             <i class="fas fa-user-plus"></i> Create Account
@@ -190,32 +180,8 @@
 
   </div>
 
-  <script>
-    const tabStudent = document.getElementById('tab_student');
-    const tabTeacher = document.getElementById('tab_teacher');
-    const tabCounselor = document.getElementById('tab_counselor');
-    const tabStaff = document.getElementById('tab_staff');
-    const deptGroup = document.getElementById('department-group');
-    const deptSelect = document.getElementById('department');
-
-    function toggleDepartment() {
-      if (tabStudent.checked) {
-        deptGroup.style.display = '';
-        deptSelect.setAttribute('required', 'required');
-      } else {
-        deptGroup.style.display = 'none';
-        deptSelect.removeAttribute('required');
-        deptSelect.value = '';
-      }
-    }
-
-    [tabTeacher, tabCounselor, tabStaff, tabStudent].forEach(tab => {
-      tab.addEventListener('change', toggleDepartment);
-    });
-
-    // Run on page load to reflect the default selected tab
-    toggleDepartment();
-  </script>
+  <script src="/js/api.js" defer></script>
+  <script src="/js/signup.js" defer></script>
 
 </body>
 </html>

@@ -1,0 +1,13 @@
+# Environment variables
+.env
+
+# Uploaded files
+uploads/
+
+# SQLite database files
+*.db
+*.db-wal
+*.db-shm
+
+# Node modules
+node_modules/

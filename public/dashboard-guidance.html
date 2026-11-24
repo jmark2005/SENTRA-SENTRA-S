@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guidance Dashboard — SENTRA</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+</head>
+<body class="dash-page">
+  <div class="dash-layout">
+
+    <aside class="dash-sidebar" id="dashSidebar">
+      <div class="dash-brand">
+        <img src="Global Solutions INC..jpg" alt="Global Solutions INC." />
+        <div class="dash-brand-text">
+          <span class="dash-brand-name">Global Solutions INC.</span>
+          <span class="dash-brand-tag">SENTRA</span>
+        </div>
+      </div>
+      <nav class="dash-nav" id="dashNav">
+        <!-- Built dynamically by initDashboard() -->
+      </nav>
+      <div class="dash-sidebar-footer">
+        <a href="login.html" class="dash-logout" id="logoutBtn">
+          <i class="fas fa-right-from-bracket"></i> Logout
+        </a>
+      </div>
+    </aside>
+    <div class="dash-backdrop" id="dashBackdrop"></div>
+
+    <div class="dash-main">
+      <header class="dash-topbar">
+        <button class="dash-menu-toggle" id="menuToggle" type="button">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="dash-page-title" id="pageTitle">
+          Overview <small>Guidance Dashboard</small>
+        </div>
+        <div class="dash-topbar-actions">
+          <button class="dash-bell" id="notifBell" title="Notifications" type="button">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+          </button>
+        </div>
+        <div class="dash-user">
+          <div class="dash-user-info">
+            <span class="dash-user-name">Guidance Counselor</span>
+            <span class="dash-user-role">Guidance Counselor</span>
+          </div>
+          <div class="dash-avatar">GC</div>
+        </div>
+      </header>
+
+      <main class="dash-content">
+
+        <!-- OVERVIEW -->
+        <section class="section-panel active" id="overview">
+          <div class="dash-welcome">
+            <h2>Guidance Dashboard</h2>
+            <p>Submit incident reports, manage support referrals, and track student well-being.</p>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-card-ico red"><i class="fas fa-file-circle-exclamation"></i></div>
+              <div class="stat-card-body"><small>My Incidents</small><strong id="statIncidents">—</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico orange"><i class="fas fa-hand-holding-heart"></i></div>
+              <div class="stat-card-body"><small>My Referrals</small><strong id="statReferrals">—</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico maroon"><i class="fas fa-id-card"></i></div>
+              <div class="stat-card-body"><small>Students</small><strong id="statStudents">—</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico green"><i class="fas fa-calendar-check"></i></div>
+              <div class="stat-card-body"><small>Attendance</small><strong id="statAttendance">—</strong></div>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-circle-info"></i> Dashboard Status</div>
+            </div>
+            <p class="dash-muted-intro">
+              Use the sidebar to navigate to Incident Submission, My Incidents, Referrals,
+              Attendance, and Student Records.
+            </p>
+          </div>
+        </section>
+
+        <!-- SUBMIT INCIDENT -->
+        <section class="section-panel" id="submit-incident">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-file-circle-plus"></i> Submit Incident Report</div>
+            </div>
+            <p class="dash-muted-intro">Report a safety incident. All fields marked with <span style="color:#c0392b;">*</span> are required.</p>
+            <p id="incidentFormSuccess" class="settings-success-msg" style="display:none;"></p>
+            <p id="incidentFormError"   class="error-msg"></p>
+            <form id="incidentSubmitForm" autocomplete="off">
+              <div class="field-row">
+                <div class="field">
+                  <label>Category <span style="color:#c0392b;">*</span></label>
+                  <select id="incidentFormCategory" class="filter-select" style="width:100%;" required>
+                    <option value="">Loading…</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Date of Incident <span style="color:#c0392b;">*</span></label>
+                  <input id="incidentFormDate" type="date" class="search-input" style="width:100%;" required />
+                </div>
+                <div class="field">
+                  <label>Time of Incident <span style="color:#c0392b;">*</span></label>
+                  <input id="incidentFormTime" type="time" class="search-input" style="width:100%;" required />
+                </div>
+              </div>
+              <div class="field">
+                <label>Location (text) <span style="color:#c0392b;">*</span></label>
+                <input id="incidentFormLocation" type="text" class="search-input" style="width:100%;" maxlength="255" placeholder="e.g. Corridor near Room 203" required />
+              </div>
+              <div class="field" id="incidentFormLocFieldWrap">
+                <label>Campus Location <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
+                <select id="incidentFormCampusLoc" class="filter-select" style="width:100%;">
+                  <option value="">— Select location (optional) —</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Description <span style="color:#c0392b;">*</span></label>
+                <textarea id="incidentFormDescription" class="modal-textarea" rows="4" style="width:100%;resize:vertical;" placeholder="Describe the incident in detail…" required></textarea>
+              </div>
+              <!-- Involved Parties -->
+              <div class="field" id="incidentFormPartySection">
+                <label>Involved Parties <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
+                <div id="incidentFormStudentLookupWrap">
+                  <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input id="incidentPartyStudentNum" type="text" class="search-input" placeholder="Student number lookup…" style="flex:1;" />
+                    <button type="button" class="btn-soft btn-sm" id="incidentPartyLookupBtn"><i class="fas fa-search"></i> Find</button>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input id="incidentPartyFreeText" type="text" class="search-input" placeholder="Free-text party (e.g. Unknown visitor)…" style="flex:1;" maxlength="100" />
+                    <button type="button" class="btn-soft btn-sm" id="incidentPartyAddFreeBtn"><i class="fas fa-plus"></i> Add</button>
+                  </div>
+                  <p id="incidentPartyError" class="error-msg" style="font-size:.82rem;"></p>
+                </div>
+                <div id="incidentPartyList"></div>
+              </div>
+              <!-- File Upload Zone -->
+              <div class="field">
+                <label>Attachments <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional, max 3 files, 5&nbsp;MB each)</span></label>
+                <div class="file-dropzone" id="incidentFileDropzone">
+                  <i class="fas fa-cloud-arrow-up"></i>
+                  <span>Click to upload or drag &amp; drop</span>
+                  <small>JPG, PNG, PDF — max 5 MB per file, up to 3 files</small>
+                </div>
+                <input type="file" id="incidentFileInput" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" multiple />
+                <p id="incidentFileError" class="error-msg" style="font-size:.82rem;"></p>
+                <div id="incidentFilePreview"></div>
+              </div>
+              <div class="modal-footer" style="padding:0;margin-top:16px;">
+                <button type="submit" class="btn-maroon btn-sm" id="incidentFormSubmitBtn">
+                  <i class="fas fa-paper-plane"></i> Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- MY INCIDENTS -->
+        <section class="section-panel" id="my-incidents">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-file-circle-exclamation"></i> My Incidents</div>
+              <div class="panel-card-actions">
+                <select id="incidentFilterStatusNew" class="filter-select">
+                  <option value="">All Statuses</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Assigned">Assigned</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="For Follow-Up">For Follow-Up</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+                <select id="incidentFilterCategory" class="filter-select">
+                  <option value="">All Categories</option>
+                </select>
+                <input type="date" id="incidentFilterFrom" class="filter-select" title="From date" />
+                <input type="date" id="incidentFilterTo"   class="filter-select" title="To date" />
+              </div>
+            </div>
+            <p class="dash-muted-intro">Incidents you reported or are assigned to respond to.</p>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Incident</th><th>Reporter</th><th>Date</th><th>Severity</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="incidentListBody">
+                  <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="incidentListMeta"></div>
+          </div>
+        </section>
+
+        <!-- REFERRALS -->
+        <section class="section-panel" id="referrals">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-hand-holding-heart"></i></div>
+            <h3>Support Referrals</h3>
+            <p>Submit and manage student support referrals. Enabled in T-27B.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- ATTENDANCE -->
+        <section class="section-panel" id="attendance">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-calendar-check"></i></div>
+            <h3>Attendance</h3>
+            <p>View attendance summaries for your assigned classes. Enabled in T-29B.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- STUDENTS -->
+        <section class="section-panel" id="students">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-id-card"></i></div>
+            <h3>Student Records</h3>
+            <p>Search and view student profiles. Enabled in T-15B.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section class="section-panel" id="notifications">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-bell"></i></div>
+            <h3>Notifications &amp; Emergency Alerts</h3>
+            <p>Your notification list and Emergency Alert button. Enabled in a later task.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- CAMPUS MAP -->
+        <section class="section-panel" id="campus-map">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-map-location-dot"></i> Campus Map</div>
+            </div>
+            <p class="dash-muted-intro">
+              Incident count overview by campus location. Full detail enabled in a later task (AF3).
+            </p>
+            <img src="blueprint.svg" alt="School Facility Map" class="facility-map-img" />
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Incident Detail Modal -->
+  <div class="modal-overlay" id="incidentDetailModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="incidentDetailTitle"><i class="fas fa-file-circle-exclamation"></i> Incident Details</h3>
+        <button class="modal-close" id="incidentDetailClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="incidentDetailBody"></div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="incidentDetailCloseFooter" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Action Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3 id="confirmModalTitle"><i class="fas fa-circle-question"></i> Confirm Action</h3>
+        <button class="modal-close" id="confirmModalClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" class="confirm-modal-message"></p>
+        <div id="confirmModalExtra"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="confirmModalCancel" type="button">Cancel</button>
+        <button class="btn-maroon btn-sm" id="confirmModalOk" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Drawer -->
+  <div class="notif-drawer" id="notifDrawer">
+    <div class="notif-drawer-header">
+      <span><i class="fas fa-bell"></i> Notifications</span>
+      <div class="notif-drawer-actions">
+        <button class="btn-soft btn-sm" id="markAllReadBtn" type="button">Mark all read</button>
+        <button class="modal-close" id="notifDrawerClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="notif-drawer-body" id="notifList">
+      <p class="dash-muted-intro">Loading…</p>
+    </div>
+  </div>
+  <div class="dash-backdrop" id="notifBackdrop"></div>
+
+  <!-- Session Warning Modal -->
+  <div class="modal-overlay" id="sessionWarningModal">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-clock"></i> Session Expiring</h3>
+      </div>
+      <div class="modal-body">
+        <p id="sessionWarningMsg" class="confirm-modal-message">Your session will expire soon due to inactivity.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="sessionLogoutBtn" type="button">Log Out</button>
+        <button class="btn-maroon btn-sm" id="sessionStayBtn" type="button">Stay Signed In</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js" defer></script>
+  <script src="/js/dashboard-common.js" defer></script>
+  <script src="/js/campus-locations.js" defer></script>
+  <script src="/js/incidents.js" defer></script>
+  <script src="/js/dashboard-guidance.js" defer></script>
+</body>
+</html>

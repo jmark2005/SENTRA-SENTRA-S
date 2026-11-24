@@ -1,0 +1,12 @@
+'use strict';
+
+const repo = require('../repositories/incident-category.repository');
+
+function findAll()         { return repo.findAll(); }
+function findAllActive()   { return repo.findAllActive(); }
+function findById(id)      { return repo.findById(id); }
+function create(data)      { return repo.create(data); }
+function update(id, fields){ return repo.update(id, fields); }
+function isLinkedToIncidents(id) { return repo.isLinkedToIncidents(id); }
+
+module.exports = { findAll, findAllActive, findById, create, update, isLinkedToIncidents };

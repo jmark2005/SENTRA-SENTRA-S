@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — SENTRA</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+</head>
+<body class="dash-page">
+  <div class="dash-layout">
+
+    <aside class="dash-sidebar" id="dashSidebar">
+      <div class="dash-brand">
+        <img src="Global Solutions INC..jpg" alt="Global Solutions INC." />
+        <div class="dash-brand-text">
+          <span class="dash-brand-name">Global Solutions INC.</span>
+          <span class="dash-brand-tag">SENTRA</span>
+        </div>
+      </div>
+      <nav class="dash-nav" id="dashNav">
+        <div class="dash-nav-section">Main</div>
+        <a class="dash-nav-item active" data-section="overview"><i class="fas fa-gauge-high"></i> Overview</a>
+        <div class="dash-nav-section">Management</div>
+        <a class="dash-nav-item" data-section="students"><i class="fas fa-id-card"></i> Student Information</a>
+        <a class="dash-nav-item" data-section="incidents"><i class="fas fa-file-circle-exclamation"></i> Incident Reporting <span id="incidentBadge" class="incident-badge" style="display:none;"></span></a>
+        <a class="dash-nav-item" data-section="classes"><i class="fas fa-chalkboard"></i> Classes</a>
+        <a class="dash-nav-item" data-section="attendance"><i class="fas fa-calendar-check"></i> Attendance Monitoring</a>
+        <a class="dash-nav-item" data-section="support"><i class="fas fa-hand-holding-heart"></i> Support Services</a>
+        <div class="dash-nav-section">Campus Tools</div>
+        <a class="dash-nav-item" data-section="emergency"><i class="fas fa-bell"></i> Emergency Alerts</a>
+        <a class="dash-nav-item" data-section="facility"><i class="fas fa-map-location-dot"></i> Facility Mapping</a>
+        <a class="dash-nav-item" data-section="users"><i class="fas fa-users"></i> User Accounts</a>
+        <a class="dash-nav-item" data-section="permissions"><i class="fas fa-shield-halved"></i> Permissions</a>
+        <a class="dash-nav-item" data-section="settings"><i class="fas fa-gear"></i> System Settings</a>
+        <a class="dash-nav-item" data-section="participation"><i class="fas fa-chart-bar"></i> Participation</a>
+        <a class="dash-nav-item" data-section="audit-log"><i class="fas fa-scroll"></i> Audit Log</a>
+      </nav>
+      <div class="dash-sidebar-footer">
+        <a href="login.html" class="dash-logout" id="logoutBtn"><i class="fas fa-right-from-bracket"></i> Logout</a>
+      </div>
+    </aside>
+    <div class="dash-backdrop" id="dashBackdrop"></div>
+
+    <div class="dash-main">
+      <header class="dash-topbar">
+        <button class="dash-menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+        <div class="dash-page-title" id="pageTitle">Overview <small>Administrator Dashboard</small></div>
+        <div class="dash-topbar-actions">
+          <button class="dash-bell" id="notifBell" title="Notifications" type="button">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+          </button>
+        </div>
+        <div class="dash-user">
+          <div class="dash-user-info">
+            <span class="dash-user-name">Administrator</span>
+            <span class="dash-user-role">School Administrator</span>
+          </div>
+          <div class="dash-avatar">AD</div>
+        </div>
+      </header>
+
+      <main class="dash-content">
+
+        <!-- OVERVIEW -->
+        <section class="section-panel active" id="overview">
+          <div class="dash-welcome">
+            <h2>Administrator Dashboard</h2>
+            <p>Monitor and manage student safety, attendance, and support services across the campus.</p>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-card-ico maroon"><i class="fas fa-user-graduate"></i></div>
+              <div class="stat-card-body"><small>Total Students</small><strong id="statStudents">0</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico red"><i class="fas fa-triangle-exclamation"></i></div>
+              <div class="stat-card-body"><small>Open Incidents</small><strong id="statIncidents">0</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico green"><i class="fas fa-calendar-check"></i></div>
+              <div class="stat-card-body"><small>Attendance Rate</small><strong>96%</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-ico orange"><i class="fas fa-hand-holding-heart"></i></div>
+              <div class="stat-card-body"><small>Pending Support</small><strong>4</strong></div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-id-card"></i> Student Information Management</div>
+              <button class="btn-maroon btn-sm" id="overviewManageStudentsBtn"><i class="fas fa-arrow-right"></i> Manage Students</button>
+            </div>
+            <p class="dash-muted-intro" style="margin-bottom:0;">Records and manages essential student information needed for safety monitoring, attendance tracking, and student support services.</p>
+          </div>
+        </section>
+
+        <!-- STUDENT INFORMATION MANAGEMENT -->
+        <section class="section-panel" id="students">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-id-card"></i> Student Information Management</div>
+              <div class="panel-card-actions">
+                <input id="studentSearch" class="search-input" type="text" placeholder="Search name or ID…" />
+                <select id="studentFilterYear" class="filter-select">
+                  <option value="">All School Years</option>
+                </select>
+                <button class="btn-maroon btn-sm" id="btnAddStudent"><i class="fas fa-user-plus"></i> Add Student</button>
+                <label class="toggle-label">
+                  <input type="checkbox" id="showArchived" />
+                  <span>Show Archived</span>
+                </label>
+              </div>
+            </div>
+            <p class="dash-muted-intro">Records and manages essential student information needed for safety monitoring, attendance tracking, and student support services.</p>
+            <div class="data-table-wrap">
+              <table class="data-table" id="studentTable">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Student ID</th>
+                    <th>Grade / Section</th>
+                    <th>School Year</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                  <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="studentCount"></div>
+          </div>
+        </section>
+
+        <!-- SUBMIT INCIDENT -->
+        <section class="section-panel" id="submit-incident">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-file-circle-plus"></i> Submit Incident Report</div>
+            </div>
+            <p class="dash-muted-intro">Report a safety incident. All fields marked with <span style="color:#c0392b;">*</span> are required.</p>
+            <p id="incidentFormSuccess" class="settings-success-msg" style="display:none;"></p>
+            <p id="incidentFormError"   class="error-msg"></p>
+            <form id="incidentSubmitForm" autocomplete="off">
+              <div class="field-row">
+                <div class="field">
+                  <label>Category <span style="color:#c0392b;">*</span></label>
+                  <select id="incidentFormCategory" class="filter-select" style="width:100%;" required>
+                    <option value="">Loading…</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Date of Incident <span style="color:#c0392b;">*</span></label>
+                  <input id="incidentFormDate" type="date" class="search-input" style="width:100%;" required />
+                </div>
+                <div class="field">
+                  <label>Time of Incident <span style="color:#c0392b;">*</span></label>
+                  <input id="incidentFormTime" type="time" class="search-input" style="width:100%;" required />
+                </div>
+              </div>
+              <div class="field">
+                <label>Location (text) <span style="color:#c0392b;">*</span></label>
+                <input id="incidentFormLocation" type="text" class="search-input" style="width:100%;" maxlength="255" placeholder="e.g. Corridor near Room 203" required />
+              </div>
+              <div class="field" id="incidentFormLocFieldWrap">
+                <label>Campus Location <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
+                <select id="incidentFormCampusLoc" class="filter-select" style="width:100%;">
+                  <option value="">— Select location (optional) —</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Description <span style="color:#c0392b;">*</span></label>
+                <textarea id="incidentFormDescription" class="modal-textarea" rows="4" style="width:100%;resize:vertical;" placeholder="Describe the incident in detail…" required></textarea>
+              </div>
+              <!-- Involved Parties -->
+              <div class="field" id="incidentFormPartySection">
+                <label>Involved Parties <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
+                <div id="incidentFormStudentLookupWrap">
+                  <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input id="incidentPartyStudentNum" type="text" class="search-input" placeholder="Student number lookup…" style="flex:1;" />
+                    <button type="button" class="btn-soft btn-sm" id="incidentPartyLookupBtn"><i class="fas fa-search"></i> Find</button>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input id="incidentPartyFreeText" type="text" class="search-input" placeholder="Free-text party (e.g. Unknown visitor)…" style="flex:1;" maxlength="100" />
+                    <button type="button" class="btn-soft btn-sm" id="incidentPartyAddFreeBtn"><i class="fas fa-plus"></i> Add</button>
+                  </div>
+                  <p id="incidentPartyError" class="error-msg" style="font-size:.82rem;"></p>
+                </div>
+                <div id="incidentPartyList"></div>
+              </div>
+              <!-- File Upload Zone -->
+              <div class="field">
+                <label>Attachments <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional, max 3 files, 5&nbsp;MB each)</span></label>
+                <div class="file-dropzone" id="incidentFileDropzone">
+                  <i class="fas fa-cloud-arrow-up"></i>
+                  <span>Click to upload or drag &amp; drop</span>
+                  <small>JPG, PNG, PDF — max 5 MB per file, up to 3 files</small>
+                </div>
+                <input type="file" id="incidentFileInput" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" multiple />
+                <p id="incidentFileError" class="error-msg" style="font-size:.82rem;"></p>
+                <div id="incidentFilePreview"></div>
+              </div>
+              <div class="modal-footer" style="padding:0;margin-top:16px;">
+                <button type="submit" class="btn-maroon btn-sm" id="incidentFormSubmitBtn">
+                  <i class="fas fa-paper-plane"></i> Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- INCIDENT REPORTING -->
+        <section class="section-panel" id="incidents">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-file-circle-exclamation"></i> Safety Incident Reporting &amp; Monitoring</div>
+              <div class="panel-card-actions">
+                <select id="incidentFilterStatusNew" class="filter-select">
+                  <option value="">All Statuses</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Assigned">Assigned</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="For Follow-Up">For Follow-Up</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+                <select id="incidentFilterCategory" class="filter-select">
+                  <option value="">All Categories</option>
+                </select>
+                <input type="date" id="incidentFilterFrom" class="filter-select" title="From date" />
+                <input type="date" id="incidentFilterTo"   class="filter-select" title="To date" />
+              </div>
+            </div>
+            <p class="dash-muted-intro">Monitor and respond to safety incidents. Use the filter bar to narrow results by status, category, or date range.</p>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Incident</th><th>Reporter</th><th>Date</th><th>Severity</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="incidentListBody">
+                  <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="incidentListMeta"></div>
+          </div>
+        </section>
+
+        <!-- CLASS MANAGEMENT -->
+        <section class="section-panel" id="classes">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-chalkboard"></i> Class Management</div>
+              <div class="panel-card-actions">
+                <button class="btn-maroon btn-sm" id="btnAddClass"><i class="fas fa-plus"></i> Add Class</button>
+              </div>
+            </div>
+            <p class="dash-muted-intro">Create and manage classes, assign teachers and students. Classes are used for attendance scoping.</p>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Class Name</th>
+                    <th>Grade / Section</th>
+                    <th>School Year</th>
+                    <th>Semester</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="classTableBody">
+                  <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="classCount"></div>
+          </div>
+        </section>
+
+        <!-- ATTENDANCE MONITORING -->
+        <section class="section-panel" id="attendance">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-calendar-check"></i></div>
+            <h3>Semester Attendance Monitoring</h3>
+            <p>Records present, absent, and tardy statuses throughout the semester and generates attendance summaries for school personnel.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- SUPPORT SERVICES -->
+        <section class="section-panel" id="support">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-hand-holding-heart"></i></div>
+            <h3>Student Support Services Management</h3>
+            <p>Records student support activities including academic assistance, guidance referrals, and other school-based services within the project scope.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- EMERGENCY ALERTS -->
+        <section class="section-panel" id="emergency">
+          <div class="placeholder-panel">
+            <div class="ph-icon"><i class="fas fa-bell"></i></div>
+            <h3>Emergency Alerts</h3>
+            <p>Monitor and respond to emergency notifications triggered by students and staff across the school premises.</p>
+            <span class="ph-soon">Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- FACILITY MAPPING -->
+        <section class="section-panel" id="facility">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-map-location-dot"></i> Facility Mapping</div>
+            </div>
+            <p class="dash-muted-intro">A virtual diagram of the school premises integrated into the system to indicate the location of reported incidents or emergencies.</p>
+            <img src="blueprint.svg" alt="School Facility Map" class="facility-map-img" />
+          </div>
+        </section>
+
+        <!-- USER ACCOUNTS -->
+        <section class="section-panel" id="users">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-users"></i> User Account Management</div>
+              <div class="panel-card-actions">
+                <select id="userFilterStatus" class="filter-select">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <select id="userFilterRole" class="filter-select">
+                  <option value="">All Roles</option>
+                  <option value="sysadmin">System Admin</option>
+                  <option value="schoolhead">School Head</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="guidance">Guidance</option>
+                  <option value="safetyofficer">Safety Officer</option>
+                  <option value="student">Student</option>
+                </select>
+              </div>
+            </div>
+            <p class="dash-muted-intro">Review and manage accounts for all users. Approve, reject, deactivate, or reset passwords as needed.</p>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>User</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody">
+                  <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="userCount"></div>
+          </div>
+        </section>
+
+        <!-- PERMISSIONS -->
+        <section class="section-panel" id="permissions">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-shield-halved"></i> Role &amp; Permission Management</div>
+              <select id="permRoleSelect" class="filter-select">
+                <option value="">Select a role…</option>
+              </select>
+            </div>
+            <p class="dash-muted-intro">Toggle permissions for each role. Protected sysadmin permissions cannot be removed.</p>
+            <div id="permTableWrap">
+              <p class="dash-muted-intro">Select a role above to view and edit its permissions.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SYSTEM SETTINGS -->
+        <section class="section-panel" id="settings">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-gear"></i> System Settings</div>
+              <button class="btn-maroon btn-sm" id="saveSettingsBtn"><i class="fas fa-check"></i> Save Changes</button>
+            </div>
+            <p class="dash-muted-intro">Configure global system parameters. Changes take effect immediately for all users.</p>
+            <div id="settingsFormWrap"><p class="dash-muted-intro">Loading…</p></div>
+            <div id="settingsError"   class="error-msg"></div>
+            <div id="settingsSuccess" class="settings-success-msg"></div>
+          </div>
+        </section>
+
+        <!-- PERSONNEL PARTICIPATION -->
+        <section class="section-panel" id="participation">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-chart-bar"></i> Personnel Participation History</div>
+              <div class="panel-card-actions">
+                <input type="date" id="partFrom" class="filter-select">
+                <input type="date" id="partTo"   class="filter-select">
+                <button class="btn-maroon btn-sm" id="viewParticipationBtn"><i class="fas fa-search"></i> View</button>
+              </div>
+            </div>
+            <p class="dash-muted-intro">View how many incidents, referrals, and attendance records a staff member has contributed to within a date range.</p>
+            <div class="field" style="max-width:340px;margin-bottom:16px;">
+              <label>Select User</label>
+              <select id="partUserSelect" class="filter-select" style="width:100%;">
+                <option value="">— select a user —</option>
+              </select>
+            </div>
+            <div id="participationResult"></div>
+          </div>
+        </section>
+
+        <!-- CAMPUS LOCATIONS MANAGEMENT -->
+        <section class="section-panel" id="campus-locations">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title">
+                <i class="fas fa-map-pin"></i> Campus Location Management
+              </div>
+              <button id="campusLocAddBtn" class="btn-maroon btn-sm">
+                <i class="fas fa-plus"></i> Add Location
+              </button>
+            </div>
+            <p class="dash-muted-intro">
+              Define named campus locations that reporters can optionally select when submitting
+              an incident. Deactivated locations no longer appear in submission forms but are
+              retained in historical records.
+            </p>
+
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Coord X</th>
+                    <th>Coord Y</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="campusLocTableBody">
+                  <tr><td colspan="6" class="table-empty">Loading&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="campusLocTableMeta"></div>
+          </div>
+        </section>
+
+        <!-- CATEGORY MANAGEMENT -->
+        <section class="section-panel" id="category-management">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title">
+                <i class="fas fa-tags"></i> Incident Category Management
+              </div>
+            </div>
+            <p class="dash-muted-intro">
+              Add, rename, or deactivate incident categories. Inactive categories no longer
+              appear in incident submission forms but are retained in historical records.
+            </p>
+
+            <!-- Add Category form -->
+            <div class="panel-card-actions cat-add-form">
+              <input id="catAddInput" class="search-input" type="text"
+                placeholder="New category name\u2026" maxlength="80" />
+              <button id="catAddBtn" class="btn-maroon btn-sm">
+                <i class="fas fa-plus"></i> Add Category
+              </button>
+            </div>
+            <p id="catAddError" class="error-msg"></p>
+
+            <!-- Categories table -->
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="catTableBody">
+                  <tr><td colspan="3" class="table-empty">Loading&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-meta" id="catTableMeta"></div>
+          </div>
+        </section>
+
+        <!-- AUDIT LOG -->
+        <section class="section-panel" id="audit-log">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <div class="panel-card-title"><i class="fas fa-scroll"></i> Audit Log</div>
+            </div>
+            <p class="dash-muted-intro">Complete record of all system actions. Use filters to narrow by date, actor, or action type.</p>
+            <div id="auditLogPanel"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Campus Location Modal -->
+  <div class="modal-overlay" id="campusLocModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="campusLocModalTitle"><i class="fas fa-map-pin"></i> Campus Location</h3>
+        <button class="modal-close" id="campusLocModalClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="campusLocModalError" class="error-msg"></p>
+        <div class="field">
+          <label>Name <span style="color:#c0392b;">*</span></label>
+          <input id="campusLocName" class="search-input" type="text" maxlength="100"
+            placeholder="e.g. Main Building" style="width:100%;" />
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <input id="campusLocDesc" class="search-input" type="text" maxlength="255"
+            placeholder="Optional description" style="width:100%;" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Coord X <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(0–100%)</span></label>
+            <input id="campusLocCx" class="search-input" type="number" min="0" max="100" step="0.1"
+              placeholder="Optional" style="width:100%;" />
+          </div>
+          <div class="field">
+            <label>Coord Y <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(0–100%)</span></label>
+            <input id="campusLocCy" class="search-input" type="number" min="0" max="100" step="0.1"
+              placeholder="Optional" style="width:100%;" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="campusLocCancelBtn" type="button">Cancel</button>
+        <button class="btn-maroon btn-sm" id="campusLocSaveBtn" type="button" data-mode="add" data-id="">
+          <i class="fas fa-check"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Record Modal -->
+  <div class="modal-overlay" id="studentModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="studentModalTitle"><i class="fas fa-id-card"></i> Student Record</h3>
+        <button class="modal-close" id="studentModalClose"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="studentModalBody"></div>
+      <div class="modal-footer" id="studentModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- Incident Detail Modal -->
+  <div class="modal-overlay" id="incidentDetailModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="incidentDetailTitle"><i class="fas fa-file-circle-exclamation"></i> Incident Details</h3>
+        <button class="modal-close" id="incidentDetailClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="incidentDetailBody"></div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="incidentDetailCloseFooter" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Action Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3 id="confirmModalTitle"><i class="fas fa-circle-question"></i> Confirm Action</h3>
+        <button class="modal-close" id="confirmModalClose"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" class="confirm-modal-message"></p>
+        <div id="confirmModalExtra"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="confirmModalCancel">Cancel</button>
+        <button class="btn-maroon btn-sm" id="confirmModalOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class Modal -->
+  <div class="modal-overlay" id="classModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="classModalTitle"><i class="fas fa-chalkboard"></i> Class</h3>
+        <button class="modal-close" id="classModalClose"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="classModalBody"></div>
+      <div class="modal-footer" id="classModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- Notification Drawer -->
+  <div class="notif-drawer" id="notifDrawer">
+    <div class="notif-drawer-header">
+      <span><i class="fas fa-bell"></i> Notifications</span>
+      <div class="notif-drawer-actions">
+        <button class="btn-soft btn-sm" id="markAllReadBtn" type="button">Mark all read</button>
+        <button class="modal-close" id="notifDrawerClose" type="button"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="notif-drawer-body" id="notifList">
+      <p class="dash-muted-intro">Loading…</p>
+    </div>
+  </div>
+  <div class="dash-backdrop" id="notifBackdrop"></div>
+
+  <!-- Session Warning Modal -->
+  <div class="modal-overlay" id="sessionWarningModal">
+    <div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-clock"></i> Session Expiring</h3>
+      </div>
+      <div class="modal-body">
+        <p id="sessionWarningMsg" class="confirm-modal-message">Your session will expire soon due to inactivity.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-soft btn-sm" id="sessionLogoutBtn" type="button">Log Out</button>
+        <button class="btn-maroon btn-sm" id="sessionStayBtn" type="button">Stay Signed In</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js" defer></script>
+  <script src="/js/dashboard-common.js" defer></script>
+  <script src="/js/legacy-admin.js" defer></script>
+  <script src="/js/account-management.js" defer></script>
+  <script src="/js/permissions.js" defer></script>
+  <script src="/js/settings.js" defer></script>
+  <script src="/js/participation.js" defer></script>
+  <script src="/js/students.js" defer></script>
+  <script src="/js/classes.js" defer></script>
+  <script src="/js/incidents.js" defer></script>
+  <script src="/js/dashboard-admin.js" defer></script>
+  <script src="/js/audit-log.js" defer></script>
+  <script src="/js/incident-categories.js" defer></script>
+  <script src="/js/campus-locations.js" defer></script>
+</body>
+</html>

@@ -1,30 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --maroon:        #800000;
-  --maroon-dark:   #5c0000;
-  --maroon-light:  #a30000;
-  --maroon-faint:  #fdf2f2;
-  --maroon-subtle: #f5e0e0;
-  --maroon-glow:   rgba(128,0,0,.35);
-  --black:         #0d0d0d;
-  --black-soft:    #1a1a1a;
-  --white:         #ffffff;
-  --bg:            #f9f5f5;
-  --surface:       #ffffff;
-  --text:          #1a1a1a;
-  --muted:         #5a3c3c;
-  --border:        #e8d5d5;
-  --border-glass:  rgba(255,255,255,.15);
-  --text-light:    rgba(255,255,255,.65);
-  --radius:        12px;
-  --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
-  --shadow:        0 4px 16px rgba(128,0,0,.12);
-  --shadow-lg:     0 12px 40px rgba(128,0,0,.18);
-  --transition:    .25s ease;
-  --nav-h:         72px;
-}
-
 html { scroll-behavior: smooth; }
 
 body {
@@ -935,3 +910,821 @@ table.data-table { width: 100%; border-collapse: collapse; min-width: 680px; }
 
 /* Hide the Admin role tab — admin logs in via credentials, not a visible tab */
 .role-tabs label[for="tab_admin"] { display: none !important; }
+
+/* ── T-15B Student UI helpers ───────────────────────────────────────────────── */
+
+.panel-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: .85rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .84rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+}
+
+.table-meta {
+  margin-top: 12px;
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 6px;
+  color: var(--maroon);
+  transition: background var(--transition);
+}
+.btn-icon:hover      { background: var(--maroon-subtle); }
+.btn-icon.btn-danger { color: #c0392b; }
+.btn-icon.btn-danger:hover { background: #fdf0f0; }
+
+.modal-loading {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px;
+}
+
+.modal-lg { max-width: 640px; }
+
+/* Tab bar inside modals */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 8px 16px;
+  font-size: .88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  border-radius: 6px 6px 0 0;
+  transition: color var(--transition), border-color var(--transition);
+}
+.tab-btn:hover     { color: var(--maroon); }
+.tab-btn.tab-active {
+  color: var(--maroon);
+  border-bottom-color: var(--maroon);
+}
+
+.tab-pane             { display: none; }
+.tab-pane.tab-pane-active { display: block; }
+
+.facility-map-img {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.settings-success-msg {
+  color: #27ae60;
+  font-size: .85rem;
+  margin-top: 8px;
+}
+
+.incident-new-banner {
+  align-items: center;
+  gap: 10px;
+  background: #fdf0f0;
+  border: 1px solid #f5c6cb;
+  color: #c0392b;
+  border-radius: 10px;
+  padding: 11px 16px;
+  margin-bottom: 14px;
+  font-size: .87rem;
+  font-weight: 600;
+}
+
+.incident-badge {
+  background: #c0392b;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ── T-16B Class Management UI ──────────────────────────────────────────────── */
+
+.class-student-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.class-search-results {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 0;
+  margin-bottom: 16px;
+}
+
+.class-student-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  font-size: .88rem;
+  border-bottom: 1px solid var(--border);
+}
+.class-student-row:last-child { border-bottom: none; }
+
+.teacher-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.teacher-check-item {
+  font-size: .88rem;
+  gap: 10px;
+}
+
+/* ── Utility: hide login role tabs when student feature is disabled ── */
+.tab-hidden { display: none !important; }
+
+
+/* ===== T-18B: Dashboard Shell additions ===== */
+
+/* Topbar actions slot (notification bell area) */
+.dash-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+/* Notification bell button */
+.dash-bell {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1.1rem;
+  padding: 7px 10px;
+  border-radius: var(--radius, 10px);
+  transition: background var(--transition), color var(--transition);
+  line-height: 1;
+}
+.dash-bell:hover {
+  background: var(--maroon-subtle);
+  color: var(--maroon);
+}
+
+/* Unread count badge on the bell */
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--maroon, #800000);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Notification drawer */
+.notif-drawer {
+  position: fixed;
+  top: 0;
+  right: -380px;
+  width: 360px;
+  max-width: 95vw;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 24px rgba(0,0,0,.18);
+  z-index: 1100;
+  transition: right .28s ease;
+  display: flex;
+  flex-direction: column;
+}
+.notif-drawer.open {
+  right: 0;
+}
+
+.notif-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+
+.notif-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* Individual notification items */
+.notif-item {
+  padding: 12px 14px;
+  border-radius: var(--radius, 10px);
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition);
+}
+.notif-item:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.notif-item.unread {
+  background: var(--maroon-subtle, #f9eded);
+  border-color: var(--border);
+}
+
+.notif-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.notif-item-icon {
+  color: var(--maroon, #800000);
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+.notif-item-title {
+  font-weight: 600;
+  font-size: .88rem;
+  color: var(--text);
+  line-height: 1.3;
+}
+.notif-item-msg {
+  font-size: .82rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-left: 22px;
+}
+.notif-item-time {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: 4px;
+  margin-left: 22px;
+}
+
+/* Disclaimer banner — below topbar, above content */
+.dash-disclaimer-banner {
+  background: var(--maroon-subtle, #f9eded);
+  border-left: 3px solid var(--maroon, #800000);
+  padding: 8px 28px;
+  font-size: .78rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dash-disclaimer-banner i {
+  color: var(--maroon, #800000);
+  flex-shrink: 0;
+}
+
+/* Session warning modal overlay — reuses existing modal-overlay/modal classes */
+/* No extra rules needed beyond the shared modal styles already in styles.css */
+
+/* Mobile: show menu toggle, collapse sidebar */
+@media (max-width: 768px) {
+  .dash-menu-toggle { display: block; }
+  .dash-main { margin-left: 0; }
+  .dash-sidebar {
+    transform: translateX(-100%);
+  }
+  .dash-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 360px) {
+  .dash-sidebar {
+    width: 240px;
+  }
+}
+
+
+/* ===== T-17B: CSP cleanup — extracted inline styles ===== */
+
+/* Utility: hidden (replaces style="display:none" on badges/banners JS controls) */
+.u-hidden { display: none !important; }
+
+/* Keyframe animations extracted from dashboard-admin.html */
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+#incidentBadge { animation: pulse-badge 1.4s infinite; }
+
+@keyframes notif-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.2); }
+}
+#notifBadge { animation: notif-pulse 1.6s infinite; }
+
+/* Keyframe animations extracted from student-dashboard.html */
+@keyframes modalShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* admin fadeInUp (same keyframe, only one definition needed) */
+
+/* Incident type button hover — extracted from student-dashboard.html <style> */
+.inc-type-btn:hover {
+  border-color: var(--maroon-dark) !important;
+  background: rgba(139, 0, 0, .05) !important;
+}
+
+/* Layout utilities extracted from inline style= attributes */
+
+/* Incidents panel header flex container (dashboard-admin.html) */
+.inc-panel-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Participation field wrapper (dashboard-admin.html) */
+.part-user-field {
+  max-width: 340px;
+  margin-bottom: 16px;
+}
+
+/* Overview intro paragraph — no bottom margin variant (dashboard-admin.html) */
+.dash-muted-intro.no-mb { margin-bottom: 0; }
+
+/* Emergency alert panel (student-dashboard.html) */
+.emergency-panel {
+  max-width: 580px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Emergency ph-icon variant (red tint) */
+.ph-icon.ph-icon-emergency {
+  background: #f9e5e5;
+  color: var(--maroon-dark);
+}
+
+/* Emergency heading */
+.emergency-heading {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+/* Emergency description */
+.emergency-desc {
+  color: var(--muted);
+  margin-bottom: 20px;
+  font-size: .9rem;
+  line-height: 1.65;
+}
+
+/* Emergency button size override */
+.btn-maroon.btn-emergency {
+  padding: 14px 28px;
+  font-size: 1rem;
+}
+
+/* Emergency result message */
+.emergency-msg-text {
+  margin-top: 16px;
+  font-size: .86rem;
+  font-weight: 600;
+  color: #006644;
+}
+
+/* Facility map description paragraph */
+.facility-desc {
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-size: .9rem;
+  line-height: 1.65;
+}
+
+/* Incident count footer line */
+.incident-count-footer {
+  margin-top: 14px;
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+/* change-password.html — success message paragraph */
+.change-pw-success {
+  color: var(--maroon);
+  font-size: .875rem;
+  min-height: 1.25rem;
+  text-align: center;
+}
+
+/* confirm-modal message text */
+.confirm-modal-message {
+  color: var(--muted);
+  font-size: .93rem;
+  line-height: 1.65;
+}
+
+/* Incident table: type badge */
+.incident-type-badge {
+  font-size: .78rem;
+  background: rgba(139, 0, 0, .08);
+  color: var(--maroon-dark);
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+/* Incident table: date cell */
+.incident-date-cell {
+  white-space: nowrap;
+  font-size: .85rem;
+}
+
+/* Incident table: icon+title cell flex container */
+.incident-title-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Incident table: round icon */
+.incident-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(139, 0, 0, .1);
+  color: var(--maroon-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Incident view modal: title/status flex row */
+.incident-view-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Incident view modal: large round icon */
+.incident-view-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(139, 0, 0, .1);
+  color: var(--maroon-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+/* Incident table: info-item spanning full grid width */
+.info-item.info-item-span {
+  grid-column: 1 / -1;
+}
+
+/* saveIncident success screen */
+.save-incident-success {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.save-incident-check-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #e8f7ef;
+  color: #1a7a4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 16px;
+}
+
+.save-incident-timestamp {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-radius: 10px;
+  font-size: .82rem;
+  color: #555;
+  text-align: left;
+}
+
+/* Error div inside incident modal */
+.inc-modal-error {
+  background: #fdf0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: .83rem;
+  font-weight: 600;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Admin status select inside incident modal */
+.modal-select-full {
+  width: 100%;
+}
+
+/* Admin response textarea */
+.modal-textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: .9rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.modal-textarea:focus {
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, .1);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  color: #fff;
+  padding: 13px 20px;
+  border-radius: 10px;
+  font-size: .88rem;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: 0 4px 18px rgba(0,0,0,.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeInUp .3s ease;
+}
+.toast.toast-green  { background: #1a7a4a; }
+.toast.toast-maroon { background: var(--maroon-dark); }
+
+/* Incident severity styles (admin view) */
+.incident-severity { font-weight: 700; }
+.incident-severity[data-severity="Low"]      { color: #27ae60; }
+.incident-severity[data-severity="Moderate"] { color: #f39c12; }
+.incident-severity[data-severity="High"]     { color: #e67e22; }
+.incident-severity[data-severity="Critical"] { color: #c0392b; }
+
+/* Incident table row new highlight */
+.incident-row-new { background: #fff9f9; }
+
+/* Incident new pill */
+.incident-new-pill {
+  background: #c0392b;
+  color: #fff;
+  font-size: .64rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* Incident title cell helpers */
+.incident-title-cell { display: flex; align-items: center; gap: 10px; }
+.incident-type-icon  { width: 36px; height: 36px; border-radius: 50%; background: rgba(139,0,0,.1); color: var(--maroon-dark); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.incident-title-text { font-size: .88rem; }
+.incident-photo-icon { color: var(--muted); font-size: .78rem; margin-left: 4px; }
+.incident-location   { color: var(--muted); font-size: .78rem; }
+.incident-reporter   { font-size: .88rem; }
+.incident-student-id { color: var(--muted); font-size: .78rem; }
+.incident-date       { font-size: .85rem; }
+.incident-time       { color: var(--muted); font-size: .78rem; }
+
+/* Incident modal header layout */
+.incident-modal-header { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.incident-modal-icon   { width: 52px; height: 52px; border-radius: 50%; background: rgba(139,0,0,.1); color: var(--maroon-dark); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.incident-modal-title  { font-size: 1rem; font-weight: 700; display: block; }
+.incident-modal-status { margin-top: 4px; display: inline-block; }
+.incident-photo-preview { width: 100%; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; }
+.incident-photo-hint    { font-size: .74rem; color: var(--muted); margin-top: 4px; text-align: right; }
+
+
+/* ── T-19B: Incident Category Management ──────────────────────────────────── */
+
+/* Spacing between the add-form row and the error paragraph */
+.cat-add-form {
+  margin-bottom: 6px;
+}
+
+/* Inline edit row inside a table cell */
+.cat-inline-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cat-inline-input {
+  flex: 1;
+  min-width: 140px;
+  max-width: 320px;
+}
+
+/* Error shown below the inline-edit row */
+.cat-inline-error {
+  margin-top: 4px;
+  font-size: .78rem;
+}
+
+/* Generic error message (used by categories panel) */
+.error-msg {
+  color: #c0392b;
+  font-size: .82rem;
+  min-height: 1.2em;
+  margin-top: 4px;
+}
+
+/* ── T-20B: Incident Timeline & File Upload ─────────────────────────────── */
+
+/* Activity timeline */
+.timeline-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 8px;
+}
+.timeline-entry {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+  position: relative;
+}
+.timeline-entry:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--maroon);
+  flex-shrink: 0;
+  margin-top: 2px;
+  z-index: 1;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.timeline-body { flex: 1; }
+.timeline-meta { font-size: .82rem; line-height: 1.5; }
+.timeline-meta strong { color: var(--text); }
+.timeline-desc { font-size: .85rem; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+/* File upload dropzone */
+.file-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: border-color .15s, background .15s;
+}
+.file-dropzone:hover {
+  border-color: var(--maroon);
+  background: rgba(139,0,0,.03);
+}
+.file-dropzone.drag-over {
+  border-color: var(--maroon-dark);
+  background: rgba(139,0,0,.06);
+}
+.file-dropzone i { font-size: 1.6rem; color: var(--maroon-dark); margin-bottom: 8px; display: block; }
+.file-dropzone span { font-size: .85rem; font-weight: 600; color: var(--text); display: block; }
+.file-dropzone small { font-size: .76rem; color: var(--muted); display: block; margin-top: 2px; }
+
+/* File preview items */
+.file-preview-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.file-preview-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+.file-preview-icon { width: 40px; height: 40px; border-radius: 6px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--maroon-dark); font-size: 1.1rem; }
+.file-preview-info { flex: 1; min-width: 0; }
+.file-preview-name { font-size: .85rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-preview-size { font-size: .76rem; color: var(--muted); }
+.file-preview-remove {
+  background: none; border: none; color: #c0392b; cursor: pointer; font-size: .9rem;
+  padding: 4px 8px; border-radius: 6px; flex-shrink: 0;
+}
+.file-preview-remove:hover { background: #fdf0f0; }
+
+/* Status action bar in incident detail */
+.incident-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.incident-restrict-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 600;
+  background: var(--surface);
+  transition: background .15s, border-color .15s;
+}
+.incident-restrict-toggle:hover { border-color: var(--maroon); }
+.incident-restrict-toggle.active { background: #f9e5e5; border-color: #c0392b; color: #c0392b; }

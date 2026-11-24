@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SENTRA</title>
+  <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
 </head>
 <body>
 
@@ -53,12 +54,12 @@
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-num">4</span>
+          <span class="stat-num">6</span>
           <span class="stat-label">User Roles</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-num">8</span>
+          <span class="stat-num">6</span>
           <span class="stat-label">Core Modules</span>
         </div>
       </div>
@@ -105,23 +106,33 @@
         <div class="about-cards">
           <div class="about-card">
             <i class="fas fa-user-shield"></i>
-            <h4>Administrators</h4>
-            <p>Full dashboard access to monitor, manage, and respond to all incidents and user accounts.</p>
+            <h4>System Administrator</h4>
+            <p>Full system access to manage accounts, roles, configuration, incidents, and audit logs.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-school"></i>
+            <h4>School Head</h4>
+            <p>Oversees all incidents, assigns personnel, approves closures, and views all dashboards.</p>
           </div>
           <div class="about-card">
             <i class="fas fa-chalkboard-teacher"></i>
-            <h4>Teachers &amp; Staff</h4>
-            <p>Submit reports, view assigned tasks, and coordinate support activities efficiently.</p>
-          </div>
-          <div class="about-card">
-            <i class="fas fa-user-graduate"></i>
-            <h4>Students</h4>
-            <p>Access support resources, trigger emergency alerts, and monitor their own attendance.</p>
+            <h4>Teacher / Class Adviser</h4>
+            <p>Submits incident reports, records attendance, and submits referrals for assigned students.</p>
           </div>
           <div class="about-card">
             <i class="fas fa-heart-pulse"></i>
-            <h4>Counselors</h4>
-            <p>Track student welfare activities and document support service completion records.</p>
+            <h4>Guidance Counselor</h4>
+            <p>Manages student referrals, follow-ups, and reviews incidents for assigned students.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-shield-halved"></i>
+            <h4>Safety Officer</h4>
+            <p>Submits and responds to incidents, updates response status, and views campus map.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-user-graduate"></i>
+            <h4>Student <em>(optional)</em></h4>
+            <p>Submits safety concerns and views own submission status and reference number only.</p>
           </div>
         </div>
       </div>
@@ -179,22 +190,6 @@
           <div class="module-body">
             <h3>Support Activity Progress Tracking</h3>
             <p>Monitors the status of student support activities — including pending, ongoing, and completed services — to ensure appropriate follow-up for every student.</p>
-          </div>
-        </div>
-
-        <div class="module-card">
-          <div class="module-icon"><i class="fas fa-bell"></i></div>
-          <div class="module-body">
-            <h3>Emergency Alert</h3>
-            <p>Enables students and staff to instantly trigger emergency notifications to school management for fast on-campus response.</p>
-          </div>
-        </div>
-
-        <div class="module-card">
-          <div class="module-icon"><i class="fas fa-map-location-dot"></i></div>
-          <div class="module-body">
-            <h3>Facility Mapping</h3>
-            <p>An interactive virtual diagram of the school premises that pinpoints the exact location of reported incidents or ongoing emergencies.</p>
           </div>
         </div>
 
@@ -267,50 +262,50 @@
       <div class="terms-grid">
 
         <div class="term-card">
-          <div class="term-icon"><i class="fas fa-user-tie"></i></div>
+          <div class="term-icon"><i class="fas fa-hashtag"></i></div>
           <div class="term-body">
-            <h4>Administrator (Admin)</h4>
-            <p>An authorized user — a school official or appointed staff — with unrestricted access to the system's dashboard to monitor, manage, and respond to reported incidents and user accounts.</p>
-          </div>
-        </div>
-
-        <div class="term-card">
-          <div class="term-icon"><i class="fas fa-gauge-high"></i></div>
-          <div class="term-body">
-            <h4>Dashboard</h4>
-            <p>The main portal used by administrators and school staff to monitor, manage, and address reported incidents and student concerns.</p>
-          </div>
-        </div>
-
-        <div class="term-card">
-          <div class="term-icon"><i class="fas fa-bell"></i></div>
-          <div class="term-body">
-            <h4>Emergency Alert</h4>
-            <p>A system feature that enables students or staff to notify school management of emergencies occurring on school premises.</p>
-          </div>
-        </div>
-
-        <div class="term-card">
-          <div class="term-icon"><i class="fas fa-map-location-dot"></i></div>
-          <div class="term-body">
-            <h4>Facility Mapping</h4>
-            <p>A virtual diagram of the school premises integrated into the system to indicate the location of reported incidents or emergencies.</p>
-          </div>
-        </div>
-
-        <div class="term-card">
-          <div class="term-icon"><i class="fas fa-file-circle-exclamation"></i></div>
-          <div class="term-body">
-            <h4>Incident Reporting</h4>
-            <p>The process of submitting reports on safety issues or events occurring on school premises through the system.</p>
+            <h4>Incident Reference Number</h4>
+            <p>Unique system-generated identifier in format <code>INC-YYYY-NNNN</code>, auto-incremented per calendar year.</p>
           </div>
         </div>
 
         <div class="term-card">
           <div class="term-icon"><i class="fas fa-lock"></i></div>
           <div class="term-body">
-            <h4>Login / Authentication</h4>
-            <p>The process by which users (students, teachers, staff, administrators) verify their identity — typically via username and password — to gain authorized access to the system.</p>
+            <h4>Role-Based Access Control (RBAC)</h4>
+            <p>Permissions assigned to roles stored in the database, checked on every API request.</p>
+          </div>
+        </div>
+
+        <div class="term-card">
+          <div class="term-icon"><i class="fas fa-box-archive"></i></div>
+          <div class="term-body">
+            <h4>Soft Delete / Archive</h4>
+            <p>Setting a record's status to Archived to hide it from normal views without permanently deleting it.</p>
+          </div>
+        </div>
+
+        <div class="term-card">
+          <div class="term-icon"><i class="fas fa-circle-up"></i></div>
+          <div class="term-body">
+            <h4>Escalation</h4>
+            <p>Automated notification to a supervisor when an incident or follow-up stays unresolved past a configured time target.</p>
+          </div>
+        </div>
+
+        <div class="term-card">
+          <div class="term-icon"><i class="fas fa-share-from-square"></i></div>
+          <div class="term-body">
+            <h4>Referral</h4>
+            <p>A formal request to route a student to a school support service (academic, guidance, or attendance-related).</p>
+          </div>
+        </div>
+
+        <div class="term-card">
+          <div class="term-icon"><i class="fas fa-calendar-days"></i></div>
+          <div class="term-body">
+            <h4>Semester</h4>
+            <p>An academic period — either 1st Semester or 2nd Semester — within a school year (e.g., "2026–2027").</p>
           </div>
         </div>
 
@@ -414,11 +409,12 @@
         <div class="footer-links">
           <h5>User Roles</h5>
           <ul>
-            <li>Administrator</li>
-            <li>Teacher</li>
-            <li>Counselor</li>
-            <li>School Staff</li>
-            <li>Student</li>
+            <li>System Administrator</li>
+            <li>School Head</li>
+            <li>Teacher / Class Adviser</li>
+            <li>Guidance Counselor</li>
+            <li>Safety Officer</li>
+            <li>Student <em>(optional)</em></li>
           </ul>
         </div>
       </div>

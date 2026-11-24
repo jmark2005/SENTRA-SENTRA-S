@@ -1,0 +1,25 @@
+/* SENTRA Design Tokens — imported first by every page */
+:root {
+  --maroon:        #800000;
+  --maroon-dark:   #5c0000;
+  --maroon-light:  #a30000;
+  --maroon-faint:  #fdf2f2;
+  --maroon-subtle: #f5e0e0;
+  --maroon-glow:   rgba(128,0,0,.35);
+  --black:         #0d0d0d;
+  --black-soft:    #1a1a1a;
+  --white:         #ffffff;
+  --bg:            #f9f5f5;
+  --surface:       #ffffff;
+  --text:          #1a1a1a;
+  --muted:         #5a3c3c;
+  --border:        #e8d5d5;
+  --border-glass:  rgba(255,255,255,.15);
+  --text-light:    rgba(255,255,255,.65);
+  --radius:        12px;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
+  --shadow:        0 4px 16px rgba(128,0,0,.12);
+  --shadow-lg:     0 12px 40px rgba(128,0,0,.18);
+  --transition:    .25s ease;
+  --nav-h:         72px;
+}
