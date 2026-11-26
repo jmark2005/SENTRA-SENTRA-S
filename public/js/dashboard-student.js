@@ -134,6 +134,33 @@ if (emergencyBtn) {
 }
 
 // ============================================================
+// Facility Map tab switcher
+// ============================================================
+document.addEventListener('DOMContentLoaded', function () {
+  var tabFloor  = document.getElementById('mapTabFloor');
+  var tabCampus = document.getElementById('mapTabCampus');
+  var viewFloor  = document.getElementById('mapViewFloor');
+  var viewCampus = document.getElementById('mapViewCampus');
+
+  function activateTab(tab) {
+    if (tab === 'floor') {
+      viewFloor.classList.remove('u-hidden');
+      viewCampus.classList.add('u-hidden');
+      tabFloor.className  = 'btn-maroon btn-sm';
+      tabCampus.className = 'btn-soft btn-sm';
+    } else {
+      viewCampus.classList.remove('u-hidden');
+      viewFloor.classList.add('u-hidden');
+      tabCampus.className = 'btn-maroon btn-sm';
+      tabFloor.className  = 'btn-soft btn-sm';
+    }
+  }
+
+  if (tabFloor)  tabFloor.addEventListener('click',  function () { activateTab('floor'); });
+  if (tabCampus) tabCampus.addEventListener('click', function () { activateTab('campus'); });
+});
+
+// ============================================================
 // Dashboard init
 // ============================================================
 document.addEventListener('DOMContentLoaded', function () {

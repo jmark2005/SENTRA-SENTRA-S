@@ -75,22 +75,7 @@
           <p>Fill in your details to register</p>
         </div>
 
-        <div class="role-tabs">
-          <input type="radio" name="role_tab" id="tab_teacher"   class="tab-radio" checked />
-          <input type="radio" name="role_tab" id="tab_counselor" class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_staff"     class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_student"   class="tab-radio" />
-
-          <label for="tab_teacher"   class="role-tab"><i class="fas fa-chalkboard-teacher"></i> Teacher</label>
-          <label for="tab_counselor" class="role-tab"><i class="fas fa-heart-pulse"></i> Counselor</label>
-          <label for="tab_staff"     class="role-tab"><i class="fas fa-id-badge"></i> Staff</label>
-          <label for="tab_student"   class="role-tab"><i class="fas fa-user-graduate"></i> Student</label>
-        </div>
-
         <form class="signup-form" action="#" method="post">
-
-          <!-- Hidden role value updated by JS -->
-          <input type="hidden" id="role-value" name="role" value="teacher" />
 
           <div class="form-row">
             <div class="input-group">
@@ -145,6 +130,21 @@
               <div class="input-wrap">
                 <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter password" autocomplete="new-password" />
               </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="requested_role">
+              <i class="fas fa-id-badge"></i> Requested Role
+            </label>
+            <div class="input-wrap">
+              <select id="requested_role" name="requested_role">
+                <option value="">— Select the role you are applying for —</option>
+                <option value="teacher">Teacher</option>
+                <option value="guidance">Guidance Counselor</option>
+                <option value="safetyofficer">Safety Officer</option>
+                <option value="student">Student</option>
+              </select>
             </div>
           </div>
 

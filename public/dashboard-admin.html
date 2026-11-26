@@ -33,7 +33,7 @@
         <a class="dash-nav-item" data-section="emergency"><i class="fas fa-bell"></i> Emergency Alerts</a>
         <a class="dash-nav-item" data-section="facility"><i class="fas fa-map-location-dot"></i> Facility Mapping</a>
         <a class="dash-nav-item" data-section="escalation-rules"><i class="fas fa-arrow-up-right-dots"></i> Escalation Rules</a>
-        <a class="dash-nav-item" data-section="users"><i class="fas fa-users"></i> User Accounts</a>
+        <a class="dash-nav-item" data-section="users"><i class="fas fa-users"></i> User Accounts <span id="pendingUsersBadge" class="incident-badge u-hidden"></span></a>
         <a class="dash-nav-item" data-section="permissions"><i class="fas fa-shield-halved"></i> Permissions</a>
         <a class="dash-nav-item" data-section="settings"><i class="fas fa-gear"></i> System Settings</a>
         <a class="dash-nav-item" data-section="participation"><i class="fas fa-chart-bar"></i> Participation</a>
@@ -318,6 +318,7 @@
             <div class="panel-card-header">
               <div class="panel-card-title"><i class="fas fa-users"></i> User Account Management</div>
               <div class="panel-card-actions">
+                <button class="btn-maroon btn-sm" id="filterPendingBtn"><i class="fas fa-clock"></i> Pending <span id="pendingUsersCount" class="badge-inline"></span></button>
                 <select id="userFilterStatus" class="filter-select">
                   <option value="">All Statuses</option>
                   <option value="Pending">Pending</option>
@@ -341,11 +342,11 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>User</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th>
+                    <th>User</th><th>ID Number</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="userTableBody">
-                  <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                  <tr><td colspan="6" class="table-empty">Loading...</td></tr>
                 </tbody>
               </table>
             </div>

@@ -59,7 +59,7 @@
           '<span class="map-legend-item"><span class="map-dot map-marker-grey"></span> 0</span>' +
         '</div>' +
         '<div class="map-wrap" id="mapWrap">' +
-          '<img src="blueprint.svg" alt="School Facility Map" class="facility-map-img" id="mapBaseImg" />' +
+          '<img src="campus-map.svg" alt="School Campus Map" class="facility-map-img" id="mapBaseImg" />' +
           '<div id="mapMarkers" class="map-markers-layer"></div>' +
         '</div>' +
       '</div>' +

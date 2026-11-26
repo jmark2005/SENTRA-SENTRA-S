@@ -324,7 +324,7 @@ Full implementation of the S.E.N.T.R.A. system — an integrated school safety a
   - Depends on: T-44
   - Write README.md: prerequisites (Node.js 20), setup steps (npm install, cp .env.example .env, node db/seeds/seed.js, npm start), environment variables table, backup procedure (better-sqlite3 .backup() API; copy .db and .db-wal files; daily schedule notes), restore procedure, notes on COOKIE_SECURE for HTTPS vs LAN HTTP. Verify .gitignore excludes .env, uploads/, *.db, *.db-wal, *.db-shm, node_modules/.
 
-- [-] T-47: Final Regression Pass
+- [x] T-47: Final Regression Pass
   - Depends on: T-45, T-46
   - Re-run core module test cases from test-plan.md. Verify vendored assets still load. Verify seed script runs clean on fresh database. Verify all append-only triggers still fire. Tag final release commit.
 

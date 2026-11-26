@@ -28,7 +28,10 @@ const signupLimiter = rateLimit({
 // ---------------------------------------------------------------------------
 const PASSWORD_POLICY = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
-const ALLOWED_ROLES = ['teacher', 'guidance', 'safetyofficer', 'student'];
+const ALLOWED_ROLES = ['teacher', 'guidance', 'safetyofficer', 'student', 'schoolhead'];
+
+// Roles a user may request at signup (excludes sysadmin and schoolhead)
+const REQUESTABLE_ROLES = ['teacher', 'guidance', 'safetyofficer', 'student'];
 
 function invalidateUserSessions(userId) {
   const sids = db
@@ -45,18 +48,25 @@ function invalidateUserSessions(userId) {
 
 // ---------------------------------------------------------------------------
 // POST /api/users/signup — public
+// Role is NOT collected from the user; the SysAdmin assigns it at approval.
+// A placeholder role of 'teacher' is stored until then (has no effect while Pending).
+// requested_role is stored for reference only — it never affects role_id.
+// Attempts to send role_id or an unlisted role in the body are ignored/rejected.
 // ---------------------------------------------------------------------------
 router.post('/signup', signupLimiter, (req, res) => {
-  const { full_name, id_number, email, username, password, confirm_password, role } = req.body;
+  // Destructure only the fields we accept — role_id is intentionally excluded.
+  const { full_name, id_number, email, username, password, confirm_password, requested_role } = req.body;
 
-  // Presence check
-  if (!full_name || !id_number || !email || !username || !password || !confirm_password || !role) {
+  // Presence check (requested_role is required)
+  if (!full_name || !id_number || !email || !username || !password || !confirm_password || !requested_role) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  // Role validation
-  if (!ALLOWED_ROLES.includes(role)) {
-    return res.status(400).json({ error: 'Invalid role. Must be one of: teacher, guidance, safetyofficer, student.' });
+  // requested_role must be one of the allowlisted self-service values
+  if (!REQUESTABLE_ROLES.includes(requested_role)) {
+    return res.status(400).json({
+      error: 'Invalid requested_role. Must be one of: teacher, guidance, safetyofficer, student.',
+    });
   }
 
   // Password match
@@ -87,31 +97,39 @@ router.post('/signup', signupLimiter, (req, res) => {
     return res.status(409).json({ error: 'Email already registered.' });
   }
 
-  // Look up role_id
-  const roleRow = db.prepare('SELECT id FROM roles WHERE name = ?').get(role);
+  // Use 'teacher' as the placeholder role until the SysAdmin assigns one at approval.
+  // This is never derived from user input.
+  const placeholderRole = 'teacher';
+  const roleRow = db.prepare('SELECT id FROM roles WHERE name = ?').get(placeholderRole);
   if (!roleRow) {
-    return res.status(400).json({ error: 'Role not found.' });
+    return res.status(500).json({ error: 'Server configuration error: default role not found.' });
   }
 
   // Hash password
   const passwordHash = bcrypt.hashSync(password, 12);
 
-  // Insert user
+  // Insert user — requested_role stored for display, role_id is always the placeholder
   const result = db
     .prepare(`
-      INSERT INTO users (username, email, password_hash, full_name, id_number, role_id, status, password_reset_required)
-      VALUES (?, ?, ?, ?, ?, ?, 'Pending', 0)
+      INSERT INTO users (username, email, password_hash, full_name, id_number, role_id, status, password_reset_required, requested_role)
+      VALUES (?, ?, ?, ?, ?, ?, 'Pending', 0, ?)
     `)
-    .run(username, email.toLowerCase(), passwordHash, full_name, id_number, roleRow.id);
+    .run(username, email.toLowerCase(), passwordHash, full_name, id_number, roleRow.id, requested_role);
 
   const newUserId = result.lastInsertRowid;
 
-  // Notify all Active sysadmin users
+  // Human-readable label for the requested role
+  const requestedRoleLabel = {
+    teacher: 'Teacher', guidance: 'Guidance Counselor',
+    safetyofficer: 'Safety Officer', student: 'Student',
+  }[requested_role] || requested_role;
+
+  // Notify all Active sysadmin users — include the requested role
   try {
     createForRole('sysadmin', {
       type: 'Account Approval',
       title: 'New account request',
-      message: `New account request from ${full_name} requesting ${role}.`,
+      message: `New account request from ${full_name} (requested role: ${requestedRoleLabel}). Please review and assign a role at approval.`,
     });
   } catch (err) {
     console.error('[signup] notification error:', err.message);
@@ -122,10 +140,11 @@ router.post('/signup', signupLimiter, (req, res) => {
     auditLog({
       actorId: null,
       actorName: full_name,
-      actorRole: role,
+      actorRole: placeholderRole,
       actionType: 'SIGNUP',
       targetTable: 'users',
       targetId: newUserId,
+      newValues: { requested_role },
     });
   } catch (err) {
     console.error('[signup] audit log error:', err.message);
@@ -169,7 +188,7 @@ router.get('/', authMiddleware, requirePermission('manage_accounts'), (req, res)
     .prepare(`
       SELECT u.id, u.username, u.email, u.full_name, u.id_number,
              r.name AS role, u.status, u.password_reset_required,
-             u.created_at, u.updated_at
+             u.requested_role, u.created_at, u.updated_at
       FROM users u
       JOIN roles r ON r.id = u.role_id
       ${where}
@@ -203,7 +222,7 @@ router.get('/:id', authMiddleware, requirePermission('manage_accounts'), (req, r
     .prepare(`
       SELECT u.id, u.username, u.email, u.full_name, u.id_number,
              r.name AS role, u.status, u.password_reset_required,
-             u.created_at, u.updated_at
+             u.requested_role, u.created_at, u.updated_at
       FROM users u
       JOIN roles r ON r.id = u.role_id
       WHERE u.id = ?
@@ -226,16 +245,16 @@ router.patch('/:id/status', authMiddleware, requirePermission('manage_accounts')
     return res.status(400).json({ error: 'Invalid user ID.' });
   }
 
-  const { status, rejection_reason, student_record_id } = req.body;
+  const { status, rejection_reason, student_record_id, role: assignedRole } = req.body;
   const allowedStatuses = ['Active', 'Rejected', 'Inactive'];
   if (!status || !allowedStatuses.includes(status)) {
     return res.status(400).json({ error: 'status must be one of: Active, Rejected, Inactive.' });
   }
 
-  // Fetch current user with role
+  // Fetch current user with role and requested_role
   const user = db
     .prepare(`
-      SELECT u.id, u.status, u.full_name, r.name AS role
+      SELECT u.id, u.status, u.full_name, r.name AS role, u.requested_role
       FROM users u JOIN roles r ON r.id = u.role_id
       WHERE u.id = ?
     `)
@@ -245,9 +264,40 @@ router.patch('/:id/status', authMiddleware, requirePermission('manage_accounts')
     return res.status(404).json({ error: 'User not found.' });
   }
 
+  // When approving a Pending account, the SysAdmin must supply a role.
+  // The role is then written to the user record (overwriting the placeholder).
+  let resolvedRole = user.role;
+  let assignedRoleRow = null;
+  if (status === 'Active' && user.status === 'Pending') {
+    if (!assignedRole || !ALLOWED_ROLES.includes(assignedRole)) {
+      return res.status(422).json({
+        error: 'role is required when approving a Pending account. Must be one of: teacher, guidance, safetyofficer, schoolhead, student.',
+      });
+    }
+    assignedRoleRow = db.prepare('SELECT id FROM roles WHERE name = ?').get(assignedRole);
+    if (!assignedRoleRow) {
+      return res.status(400).json({ error: 'Role not found.' });
+    }
+    resolvedRole = assignedRole;
+  }
+
+  // Guard: cannot approve an account that is not Pending
+  if (status === 'Active' && user.status !== 'Pending' && user.status !== 'Inactive') {
+    return res.status(422).json({
+      error: `Cannot approve an account with status "${user.status}". Only Pending accounts can be approved.`,
+    });
+  }
+
+  // Guard: cannot reject an account that is not Pending
+  if (status === 'Rejected' && user.status !== 'Pending') {
+    return res.status(422).json({
+      error: `Cannot reject an account with status "${user.status}". Only Pending accounts can be rejected.`,
+    });
+  }
+
   // T-18: student role approval requires a valid linked student record
   let studentRecord = null;
-  if (status === 'Active' && user.role === 'student') {
+  if (status === 'Active' && resolvedRole === 'student') {
     if (!student_record_id) {
       return res.status(422).json({ error: 'student_record_id is required when approving a Student account.' });
     }
@@ -271,9 +321,14 @@ router.patch('/:id/status', authMiddleware, requirePermission('manage_accounts')
   const oldStatus = user.status;
   const now = new Date().toISOString();
 
-  // Build update — include student_record_id link when approving a student account
+  // Build update — include role_id change and student_record_id when applicable
   const updateParams = [status, now];
   let updateSql = 'UPDATE users SET status = ?, updated_at = ?';
+
+  if (assignedRoleRow) {
+    updateSql += ', role_id = ?';
+    updateParams.push(assignedRoleRow.id);
+  }
 
   if (status === 'Rejected' && rejection_reason) {
     updateSql += ', rejection_reason = ?';
@@ -293,16 +348,35 @@ router.patch('/:id/status', authMiddleware, requirePermission('manage_accounts')
   // Per-transition side effects
   if (status === 'Active' && oldStatus === 'Pending') {
     // Approve (includes student record link when studentRecord is set)
+    const roleName = {
+      teacher: 'Teacher', guidance: 'Guidance', safetyofficer: 'Safety Officer',
+      schoolhead: 'School Head', student: 'Student',
+    }[resolvedRole] || resolvedRole;
     try {
       createNotification({
         userId,
         type: 'Account Approval',
         title: 'Account approved',
-        message: 'Your account has been approved. You can now log in.',
+        message: `Your account has been approved with the role: ${roleName}. You can now log in.`,
       });
     } catch (err) {
       console.error('[status] notification error:', err.message);
     }
+    // Audit log the role assignment — record both requested and confirmed role
+    const requestedRoleForAudit = db.prepare('SELECT requested_role FROM users WHERE id = ?').get(userId);
+    auditLog({
+      actorId: req.user.id,
+      actorName: req.user.full_name,
+      actorRole: req.user.role,
+      actionType: 'ROLE_ASSIGNED',
+      targetTable: 'users',
+      targetId: userId,
+      newValues: {
+        confirmed_role: resolvedRole,
+        requested_role: requestedRoleForAudit ? requestedRoleForAudit.requested_role : null,
+      },
+      ipAddress: req.ip,
+    });
     // Extra audit log entry for student record linking
     if (studentRecord) {
       auditLog({

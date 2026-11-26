@@ -56,6 +56,46 @@ function roleDisplay(role) {
 }
 
 // ---------------------------------------------------------------------------
+// Requested-role display helper (uses full labels matching the signup form)
+// ---------------------------------------------------------------------------
+function requestedRoleDisplay(role) {
+  const map = {
+    teacher:       'Teacher',
+    guidance:      'Guidance Counselor',
+    safetyofficer: 'Safety Officer',
+    student:       'Student',
+  };
+  return role ? (map[role] || role) : '—';
+}
+
+// ---------------------------------------------------------------------------
+// fetchPendingCount() — update sidebar badge and inline count
+// ---------------------------------------------------------------------------
+async function fetchPendingCount() {
+  try {
+    const res  = await api.get('/api/users?status=Pending&limit=1');
+    const data = await res.json();
+    if (!res.ok) return;
+    const count = (data.pagination && data.pagination.total) || 0;
+
+    const badge  = document.getElementById('pendingUsersBadge');
+    const inline = document.getElementById('pendingUsersCount');
+
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('u-hidden');
+      } else {
+        badge.classList.add('u-hidden');
+      }
+    }
+    if (inline) {
+      inline.textContent = count > 0 ? `(${count})` : '';
+    }
+  } catch (_) { /* non-fatal */ }
+}
+
+// ---------------------------------------------------------------------------
 // loadUsers() — fetch and render the user table
 // ---------------------------------------------------------------------------
 async function loadUsers() {
@@ -68,14 +108,14 @@ async function loadUsers() {
 
   const tbody   = document.getElementById('userTableBody');
   const countEl = document.getElementById('userCount');
-  tbody.innerHTML = '<tr><td colspan="5" class="cell-msg">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="cell-msg">Loading...</td></tr>';
 
   try {
     const res  = await api.get(url);
     const data = await res.json();
 
     if (!res.ok) {
-      tbody.innerHTML = `<tr><td colspan="5" class="cell-msg is-error">${data.error || 'Failed to load users.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="cell-msg is-error">${data.error || 'Failed to load users.'}</td></tr>`;
       return;
     }
 
@@ -83,7 +123,7 @@ async function loadUsers() {
     countEl.textContent = `Showing ${users.length} user(s).`;
 
     if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="cell-msg">No users found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="cell-msg">No users found.</td></tr>';
       return;
     }
 
@@ -91,6 +131,10 @@ async function loadUsers() {
       const initials = u.full_name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
       const date = new Date(u.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
       const actions = buildActions(u);
+      // Show "Requested: X" badge under the role for Pending users
+      const roleCell = u.status === 'Pending' && u.requested_role
+        ? `${roleDisplay(u.role)} <small class="requested-role-badge">Requested: ${requestedRoleDisplay(u.requested_role)}</small>`
+        : roleDisplay(u.role);
       return `
         <tr>
           <td>
@@ -99,7 +143,8 @@ async function loadUsers() {
               <div class="student-meta">${u.full_name}<small>${u.username} · ${u.email}</small></div>
             </div>
           </td>
-          <td>${roleDisplay(u.role)}</td>
+          <td>${u.id_number || '—'}</td>
+          <td>${roleCell}</td>
           <td><span class="status-pill ${userStatusClass(u.status)}">${u.status}</span></td>
           <td>${date}</td>
           <td><div class="row-actions">${actions}</div></td>
@@ -111,8 +156,11 @@ async function loadUsers() {
     attachActionHandlers(users);
 
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" class="cell-msg is-error">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="cell-msg is-error">Error: ${err.message}</td></tr>`;
   }
+
+  // Refresh the pending count badge whenever the table reloads
+  fetchPendingCount();
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +170,7 @@ function buildActions(u) {
   const btns = [];
 
   if (u.status === 'Pending') {
-    btns.push(`<button title="Approve" data-action="approve" data-id="${u.id}" data-role="${u.role}" data-name="${u.full_name}"><i class="fas fa-check"></i></button>`);
+    btns.push(`<button title="Approve" data-action="approve" data-id="${u.id}" data-role="${u.role}" data-requested-role="${u.requested_role || ''}" data-name="${u.full_name}"><i class="fas fa-check"></i></button>`);
     btns.push(`<button title="Reject" class="danger" data-action="reject" data-id="${u.id}" data-name="${u.full_name}"><i class="fas fa-ban"></i></button>`);
   }
 
@@ -150,15 +198,31 @@ function attachActionHandlers(users) {
       const id     = btn.dataset.id;
       const name   = btn.dataset.name;
       const role   = btn.dataset.role;
+      const requestedRole = btn.dataset.requestedRole || '';
 
       if (action === 'approve') {
-        if (role === 'student') {
-          // T-18: Student approval requires linking a student record
-          document.getElementById('confirmModalTitle').innerHTML =
-            '<i class="fas fa-check"></i> Approve Student Account';
-          document.getElementById('confirmModalMessage').textContent =
-            `Approve account for "${name}". Search for and select the student record to link.`;
-          document.getElementById('confirmModalExtra').innerHTML = `
+        // All pending approvals require the SysAdmin to confirm a role.
+        // The dropdown is pre-selected to the user's requested_role.
+        const requestedLabel = requestedRoleDisplay(requestedRole);
+        document.getElementById('confirmModalTitle').innerHTML =
+          '<i class="fas fa-check"></i> Approve Account';
+        document.getElementById('confirmModalMessage').textContent =
+          `Approve account for "${name}". Requested role: ${requestedLabel}. Confirm the role to assign.`;
+        document.getElementById('confirmModalExtra').innerHTML = `
+          <div class="input-group" style="margin-bottom:12px;">
+            <label for="approve-role-select" style="display:block;margin-bottom:6px;font-weight:600;">
+              Assign Role
+            </label>
+            <select id="approve-role-select" class="filter-select" style="width:100%;">
+              <option value="">— Select a role —</option>
+              <option value="teacher">Teacher</option>
+              <option value="guidance">Guidance</option>
+              <option value="safetyofficer">Safety Officer</option>
+              <option value="schoolhead">School Head</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+          <div id="student-link-section" style="display:none;">
             <div class="class-student-search">
               <input id="student-link-search" class="search-input" type="text"
                 placeholder="Search student by name or number\u2026" />
@@ -169,84 +233,106 @@ function attachActionHandlers(users) {
             <div id="student-link-results" class="class-search-results"></div>
             <input type="hidden" id="selected-student-record-id" value="" />
             <p id="selected-student-label" class="dash-muted-intro"></p>
-            <p id="student-link-error" class="error-msg"></p>`;
-          document.getElementById('confirmModalOk').textContent = 'Approve & Link';
-          document.getElementById('confirmModal').classList.add('open');
+          </div>
+          <p id="approve-error" class="error-msg"></p>`;
+        document.getElementById('confirmModalOk').textContent = 'Approve';
+        document.getElementById('confirmModal').classList.add('open');
 
-          // Wire search
-          const doStudentSearch = async () => {
-            const q = document.getElementById('student-link-search').value.trim();
-            if (!q) return;
-            const res  = await api.get(`/api/students?q=${encodeURIComponent(q)}&status=Active`);
-            const data = await res.json();
-            const results = document.getElementById('student-link-results');
-            const list = res.ok ? (data.data || []) : [];
-            if (!list.length) {
-              results.innerHTML = '<p class="dash-muted-intro search-empty">No students found.</p>';
-              return;
-            }
-            results.innerHTML = list.map(s => `
-              <div class="class-student-row">
-                <span>${s.last_name}, ${s.first_name} <small>(${s.student_number})</small></span>
-                <button class="btn-maroon btn-sm"
-                  data-action="select-student-record"
-                  data-student-id="${s.id}"
-                  data-student-label="${s.last_name}, ${s.first_name} (${s.student_number})">
-                  Select
-                </button>
-              </div>`).join('');
-
-            results.querySelectorAll('[data-action="select-student-record"]').forEach(btn => {
-              btn.addEventListener('click', () => {
-                document.getElementById('selected-student-record-id').value = btn.dataset.studentId;
-                document.getElementById('selected-student-label').textContent =
-                  `\u2714 Selected: ${btn.dataset.studentLabel}`;
-                document.getElementById('student-link-results').innerHTML = '';
-                document.getElementById('student-link-search').value = '';
-              });
-            });
-          };
-
-          document.getElementById('btnSearchStudentLink').addEventListener('click', doStudentSearch);
-          document.getElementById('student-link-search').addEventListener('keydown', e => {
-            if (e.key === 'Enter') doStudentSearch();
-          });
-
-          // Override confirm button
-          const okBtn = document.getElementById('confirmModalOk');
-          const newOk = okBtn.cloneNode(true);
-          okBtn.parentNode.replaceChild(newOk, okBtn);
-          newOk.addEventListener('click', async () => {
-            const recordId = document.getElementById('selected-student-record-id').value;
-            const errEl    = document.getElementById('student-link-error');
-            if (!recordId) {
-              if (errEl) errEl.textContent = 'Please select a student record first.';
-              return;
-            }
-            const res = await api.patch(`/api/users/${id}/status`, {
-              status: 'Active',
-              student_record_id: parseInt(recordId, 10),
-            });
-            const d = await res.json();
-            if (!res.ok) {
-              if (errEl) errEl.textContent = d.error || 'Failed to approve.';
-              return;
-            }
-            document.getElementById('confirmModal').classList.remove('open');
-            document.getElementById('confirmModalOk').textContent = 'Confirm';
-            loadUsers();
-          });
-        } else {
-          // Non-student approval — simple confirm
-          confirmAction(
-            `Approve account for "${name}"?`,
-            async () => {
-              const res = await api.patch(`/api/users/${id}/status`, { status: 'Active' });
-              if (res.ok) loadUsers();
-              else { const d = await res.json(); alert(d.error || 'Failed to approve.'); }
-            }
-          );
+        // Pre-select the requested role in the dropdown if it is one of the options
+        const roleSelect = document.getElementById('approve-role-select');
+        if (requestedRole && [...roleSelect.options].some(o => o.value === requestedRole)) {
+          roleSelect.value = requestedRole;
+          if (requestedRole === 'student') {
+            document.getElementById('student-link-section').style.display = 'block';
+          }
         }
+
+        // Show/hide student record search based on role selection
+        roleSelect.addEventListener('change', function () {
+          const section = document.getElementById('student-link-section');
+          section.style.display = this.value === 'student' ? 'block' : 'none';
+          if (this.value !== 'student') {
+            document.getElementById('selected-student-record-id').value = '';
+            document.getElementById('selected-student-label').textContent = '';
+            document.getElementById('student-link-results').innerHTML = '';
+          }
+        });
+
+        // Wire student search
+        const doStudentSearch = async () => {
+          const q = document.getElementById('student-link-search').value.trim();
+          if (!q) return;
+          const res  = await api.get(`/api/students?q=${encodeURIComponent(q)}&status=Active`);
+          const data = await res.json();
+          const results = document.getElementById('student-link-results');
+          const list = res.ok ? (data.data || []) : [];
+          if (!list.length) {
+            results.innerHTML = '<p class="dash-muted-intro search-empty">No students found.</p>';
+            return;
+          }
+          results.innerHTML = list.map(s => `
+            <div class="class-student-row">
+              <span>${s.last_name}, ${s.first_name} <small>(${s.student_number})</small></span>
+              <button class="btn-maroon btn-sm"
+                data-action="select-student-record"
+                data-student-id="${s.id}"
+                data-student-label="${s.last_name}, ${s.first_name} (${s.student_number})">
+                Select
+              </button>
+            </div>`).join('');
+
+          results.querySelectorAll('[data-action="select-student-record"]').forEach(selBtn => {
+            selBtn.addEventListener('click', () => {
+              document.getElementById('selected-student-record-id').value = selBtn.dataset.studentId;
+              document.getElementById('selected-student-label').textContent =
+                `\u2714 Selected: ${selBtn.dataset.studentLabel}`;
+              document.getElementById('student-link-results').innerHTML = '';
+              document.getElementById('student-link-search').value = '';
+            });
+          });
+        };
+
+        document.getElementById('btnSearchStudentLink').addEventListener('click', doStudentSearch);
+        document.getElementById('student-link-search').addEventListener('keydown', e => {
+          if (e.key === 'Enter') doStudentSearch();
+        });
+
+        // Override the confirm button with approval logic
+        const okBtn = document.getElementById('confirmModalOk');
+        const newOk = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOk, okBtn);
+        newOk.addEventListener('click', async () => {
+          const chosenRole = document.getElementById('approve-role-select').value;
+          const errEl = document.getElementById('approve-error');
+          errEl.textContent = '';
+
+          if (!chosenRole) {
+            errEl.textContent = 'Please select a role.';
+            return;
+          }
+
+          const payload = { status: 'Active', role: chosenRole };
+
+          if (chosenRole === 'student') {
+            const recordId = document.getElementById('selected-student-record-id').value;
+            if (!recordId) {
+              errEl.textContent = 'Please select a student record.';
+              return;
+            }
+            payload.student_record_id = parseInt(recordId, 10);
+          }
+
+          const res = await api.patch(`/api/users/${id}/status`, payload);
+          const d = await res.json();
+          if (!res.ok) {
+            errEl.textContent = d.error || 'Failed to approve.';
+            return;
+          }
+
+          document.getElementById('confirmModal').classList.remove('open');
+          document.getElementById('confirmModalOk').textContent = 'Confirm';
+          loadUsers();
+        });
       }
 
       else if (action === 'reject') {
@@ -330,6 +416,21 @@ function attachActionHandlers(users) {
 // Auto-load when the users section becomes active
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+  // Fetch pending count on page load to show the sidebar badge immediately
+  fetchPendingCount();
+
+  // "Pending" quick-filter button
+  const filterPendingBtn = document.getElementById('filterPendingBtn');
+  if (filterPendingBtn) {
+    filterPendingBtn.addEventListener('click', () => {
+      const sel = document.getElementById('userFilterStatus');
+      if (sel) {
+        sel.value = sel.value === 'Pending' ? '' : 'Pending';
+      }
+      loadUsers();
+    });
+  }
+
   // If the page starts on the users section, load immediately
   const usersSection = document.getElementById('users');
   if (usersSection && usersSection.classList.contains('active')) {

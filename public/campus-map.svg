@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" width="1200" height="860" font-family="Segoe UI, Arial, sans-serif">
+
+  <!-- Sky/ground background -->
+  <defs>
+    <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8f4e8"/>
+      <stop offset="100%" stop-color="#d4e8d4"/>
+    </linearGradient>
+    <linearGradient id="roadGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#b0bec5"/>
+      <stop offset="100%" stop-color="#90a4ae"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Page background — ground -->
+  <rect width="1200" height="860" fill="url(#groundGrad)"/>
+
+  <!-- ===== HEADER ===== -->
+  <rect x="0" y="0" width="1200" height="54" fill="#800000"/>
+  <rect x="14" y="10" width="34" height="34" rx="7" fill="#5c0000"/>
+  <text x="31" y="33" font-size="16" fill="#fff" text-anchor="middle">🛡</text>
+  <text x="60" y="25" font-size="14" font-weight="700" fill="#fff">SENTRA — Campus Overview Map</text>
+  <text x="60" y="43" font-size="9" fill="#ffcccc">Aerial site layout of Global Solutions INC. School Campus</text>
+  <circle cx="1098" cy="27" r="4.5" fill="#5ee25e"><animate attributeName="opacity" values="1;0.2;1" dur="1.6s" repeatCount="indefinite"/></circle>
+  <text x="1110" y="31" font-size="10" font-weight="700" fill="#fff">LIVE</text>
+  <text x="1158" y="31" font-size="9" fill="#ffcccc" text-anchor="middle">Site View</text>
+
+  <!-- ===== OUTER CAMPUS BOUNDARY ===== -->
+  <rect x="20" y="66" width="1160" height="778" rx="8" fill="none" stroke="#800000" stroke-width="3" stroke-dasharray="10 4"/>
+
+  <!-- Grass / grounds fill -->
+  <rect x="22" y="68" width="1156" height="774" rx="6" fill="#c8dfc8"/>
+
+  <!-- ===== ROAD (main perimeter road inside campus) ===== -->
+  <!-- Bottom road -->
+  <rect x="22" y="788" width="1156" height="52" rx="0" fill="#8d9fa8"/>
+  <line x1="22" y1="814" x2="1178" y2="814" stroke="#f0f0f0" stroke-width="1.5" stroke-dasharray="20 12"/>
+  <!-- Left road -->
+  <rect x="22" y="68" width="52" height="774" fill="#8d9fa8"/>
+  <line x1="48" y1="68" x2="48" y2="842" stroke="#f0f0f0" stroke-width="1.5" stroke-dasharray="20 12"/>
+  <!-- Right road -->
+  <rect x="1126" y="68" width="52" height="774" fill="#8d9fa8"/>
+  <line x1="1152" y1="68" x2="1152" y2="842" stroke="#f0f0f0" stroke-width="1.5" stroke-dasharray="20 12"/>
+  <!-- Top road -->
+  <rect x="22" y="68" width="1156" height="52" fill="#8d9fa8"/>
+  <line x1="22" y1="94" x2="1178" y2="94" stroke="#f0f0f0" stroke-width="1.5" stroke-dasharray="20 12"/>
+
+  <!-- Internal pathway (horizontal) -->
+  <rect x="74" y="430" width="1052" height="30" fill="#b0bec5" opacity="0.8"/>
+  <line x1="74" y1="445" x2="1126" y2="445" stroke="#fff" stroke-width="1" stroke-dasharray="14 8" opacity="0.6"/>
+
+  <!-- Internal pathway (vertical, centre) -->
+  <rect x="574" y="120" width="30" height="668" fill="#b0bec5" opacity="0.8"/>
+  <line x1="589" y1="120" x2="589" y2="788" stroke="#fff" stroke-width="1" stroke-dasharray="14 8" opacity="0.6"/>
+
+  <!-- ===== GRASS AREAS / COURTS ===== -->
+  <!-- Basketball / sports court -->
+  <rect x="80" y="490" width="230" height="150" rx="6" fill="#6aaa64" stroke="#4a8a44" stroke-width="1.5"/>
+  <rect x="90" y="500" width="210" height="130" rx="4" fill="none" stroke="#fff" stroke-width="1.2"/>
+  <line x1="195" y1="500" x2="195" y2="630" stroke="#fff" stroke-width="1" opacity="0.8"/>
+  <circle cx="195" cy="565" r="22" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.8"/>
+  <text x="195" y="664" font-size="9" fill="#2a6a24" font-weight="700" text-anchor="middle">BASKETBALL COURT</text>
+
+  <!-- Flag Ceremony Area -->
+  <rect x="330" y="490" width="230" height="150" rx="6" fill="#78b878" stroke="#4a8a44" stroke-width="1.5"/>
+  <line x1="445" y1="510" x2="445" y2="625" stroke="#c0a020" stroke-width="2.5"/>
+  <rect x="445" y="510" width="28" height="16" fill="#800000"/>
+  <text x="457" y="522" font-size="8" fill="#fff" text-anchor="middle">🏳</text>
+  <text x="445" y="664" font-size="9" fill="#2a6a24" font-weight="700" text-anchor="middle">FLAG CEREMONY AREA</text>
+
+  <!-- Garden / green space -->
+  <ellipse cx="850" cy="650" rx="80" ry="55" fill="#5a9a5a" stroke="#3a7a3a" stroke-width="1.5"/>
+  <text x="850" y="655" font-size="18" text-anchor="middle">🌳</text>
+  <text x="850" y="720" font-size="9" fill="#2a6a24" font-weight="700" text-anchor="middle">GARDEN</text>
+
+  <!-- Parking lot left -->
+  <rect x="80" y="660" width="230" height="120" rx="4" fill="#b8c8c0" stroke="#888" stroke-width="1.2"/>
+  <line x1="80" y1="693" x2="310" y2="693" stroke="#fff" stroke-width="1" opacity="0.6"/>
+  <line x1="80" y1="726" x2="310" y2="726" stroke="#fff" stroke-width="1" opacity="0.6"/>
+  <line x1="140" y1="660" x2="140" y2="780" stroke="#fff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="195" y1="660" x2="195" y2="780" stroke="#fff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="250" y1="660" x2="250" y2="780" stroke="#fff" stroke-width="0.8" opacity="0.5"/>
+  <!-- Parking icons -->
+  <text x="112" y="744" font-size="11" text-anchor="middle">🚗</text>
+  <text x="167" y="744" font-size="11" text-anchor="middle">🚗</text>
+  <text x="222" y="744" font-size="11" text-anchor="middle">🚗</text>
+  <text x="277" y="744" font-size="11" text-anchor="middle">🚗</text>
+  <text x="195" y="772" font-size="9" fill="#445" font-weight="700" text-anchor="middle">PARKING AREA</text>
+
+  <!-- ===== BUILDINGS ===== -->
+
+  <!-- MAIN BUILDING (large, centre-top) -->
+  <rect x="200" y="124" width="760" height="295" rx="8" fill="#fff9f9" stroke="#800000" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="200" y="124" width="760" height="34" rx="8" fill="#800000"/>
+  <rect x="200" y="148" width="760" height="10" fill="#800000"/>
+  <text x="580" y="148" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">🏫  MAIN ACADEMIC BUILDING</text>
+  <!-- Floor grid lines -->
+  <line x1="200" y1="230" x2="960" y2="230" stroke="#e8d5d5" stroke-width="1" stroke-dasharray="6 4"/>
+  <line x1="200" y1="316" x2="960" y2="316" stroke="#e8d5d5" stroke-width="1" stroke-dasharray="6 4"/>
+  <line x1="466" y1="158" x2="466" y2="419" stroke="#e8d5d5" stroke-width="1" stroke-dasharray="6 4"/>
+  <line x1="694" y1="158" x2="694" y2="419" stroke="#e8d5d5" stroke-width="1" stroke-dasharray="6 4"/>
+  <!-- Floor labels -->
+  <text x="333" y="200" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">GROUND FLOOR</text>
+  <text x="333" y="218" font-size="9" fill="#aaa" text-anchor="middle">Offices · Registration · Clinic</text>
+  <text x="580" y="200" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">2nd FLOOR</text>
+  <text x="580" y="218" font-size="9" fill="#aaa" text-anchor="middle">Classrooms 201–210</text>
+  <text x="827" y="200" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">3rd FLOOR</text>
+  <text x="827" y="218" font-size="9" fill="#aaa" text-anchor="middle">Labs · Library · Faculty</text>
+  <text x="333" y="286" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">4th FLOOR</text>
+  <text x="333" y="304" font-size="9" fill="#aaa" text-anchor="middle">Admin · Principal · Guidance</text>
+  <text x="580" y="286" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">5th FLOOR</text>
+  <text x="580" y="304" font-size="9" fill="#aaa" text-anchor="middle">Classrooms 501–510</text>
+  <text x="827" y="286" font-size="11" fill="#800000" font-weight="700" text-anchor="middle">6th FLOOR</text>
+  <text x="827" y="304" font-size="9" fill="#aaa" text-anchor="middle">Roof Deck · Maintenance</text>
+  <!-- Floor row 3 -->
+  <text x="580" y="358" font-size="22" text-anchor="middle">🏢</text>
+  <text x="580" y="400" font-size="10" fill="#800000" font-weight="700" text-anchor="middle">Main Building — 6 Floors</text>
+
+  <!-- GYMNASIUM building -->
+  <rect x="980" y="124" width="140" height="300" rx="8" fill="#fff9f9" stroke="#800000" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="980" y="124" width="140" height="28" rx="8" fill="#5c0000"/>
+  <rect x="980" y="144" width="140" height="8" fill="#5c0000"/>
+  <text x="1050" y="140" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">GYMNASIUM</text>
+  <text x="1050" y="230" font-size="30" text-anchor="middle">🏀</text>
+  <text x="1050" y="262" font-size="9" fill="#aaa" text-anchor="middle">Sports Hall</text>
+  <text x="1050" y="400" font-size="9" fill="#800000" font-weight="700" text-anchor="middle">GYM</text>
+
+  <!-- CANTEEN / CAFETERIA -->
+  <rect x="620" y="460" width="490" height="210" rx="8" fill="#fff9f9" stroke="#800000" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="620" y="460" width="490" height="28" rx="8" fill="#5c0000"/>
+  <rect x="620" y="480" width="490" height="8" fill="#5c0000"/>
+  <text x="865" y="476" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">🍽️  CANTEEN / CAFETERIA</text>
+  <text x="865" y="560" font-size="28" text-anchor="middle">🍽️</text>
+  <text x="865" y="596" font-size="9" fill="#aaa" text-anchor="middle">Dining · Pantry · Storage</text>
+  <text x="865" y="650" font-size="9" fill="#800000" font-weight="700" text-anchor="middle">CANTEEN</text>
+
+  <!-- COVERED WALK / BREEZEWAY -->
+  <rect x="200" y="419" width="400" height="40" rx="4" fill="#d4c8c8" stroke="#800000" stroke-width="1.2" stroke-dasharray="6 3"/>
+  <text x="400" y="444" font-size="8.5" fill="#800000" font-weight="700" text-anchor="middle">COVERED WALKWAY</text>
+
+  <!-- COMFORT ROOMS -->
+  <rect x="80" y="124" width="110" height="90" rx="6" fill="#e8f4ff" stroke="#4a90b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="80" y="124" width="110" height="22" rx="6" fill="#4a90b8"/>
+  <rect x="80" y="138" width="110" height="8" fill="#4a90b8"/>
+  <text x="135" y="136" font-size="8.5" font-weight="700" fill="#fff" text-anchor="middle">COMFORT ROOM</text>
+  <text x="135" y="175" font-size="18" text-anchor="middle">🚻</text>
+  <text x="135" y="206" font-size="8" fill="#4a90b8" font-weight="700" text-anchor="middle">CR (Male/Female)</text>
+
+  <!-- SECURITY BOOTH -->
+  <rect x="80" y="224" width="110" height="80" rx="6" fill="#fff3e0" stroke="#e08020" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="80" y="224" width="110" height="22" rx="6" fill="#e08020"/>
+  <rect x="80" y="238" width="110" height="8" fill="#e08020"/>
+  <text x="135" y="236" font-size="8.5" font-weight="700" fill="#fff" text-anchor="middle">SECURITY</text>
+  <text x="135" y="275" font-size="18" text-anchor="middle">🔒</text>
+  <text x="135" y="296" font-size="8" fill="#e08020" font-weight="700" text-anchor="middle">Guard Post</text>
+
+  <!-- ===== MAIN GATE / ENTRANCE ===== -->
+  <rect x="554" y="788" width="70" height="52" fill="#8d9fa8"/>
+  <!-- Gate posts -->
+  <rect x="554" y="793" width="14" height="40" rx="3" fill="#800000"/>
+  <rect x="610" y="793" width="14" height="40" rx="3" fill="#800000"/>
+  <!-- Gate bar -->
+  <rect x="568" y="793" width="42" height="6" rx="3" fill="#b00000" opacity="0.7"/>
+  <text x="589" y="830" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">▲ MAIN GATE</text>
+
+  <!-- Side gate -->
+  <rect x="22" y="400" width="52" height="38" fill="#8d9fa8"/>
+  <rect x="28" y="404" width="12" height="30" rx="3" fill="#800000"/>
+  <rect x="58" y="404" width="12" height="30" rx="3" fill="#800000"/>
+  <text x="48" y="452" font-size="8" font-weight="700" fill="#800000" text-anchor="middle">SIDE GATE</text>
+
+  <!-- ===== INCIDENT MARKERS ===== -->
+  <!-- Main Building — Ongoing (red pulse) -->
+  <circle cx="400" cy="280" r="12" fill="#e62020" opacity="0.3">
+    <animate attributeName="r" values="10;18;10" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.06;0.4" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="400" cy="280" r="9" fill="#b00000" stroke="#fff" stroke-width="1.5"/>
+  <text x="400" y="284" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">!</text>
+  <rect x="320" y="296" width="160" height="17" rx="8.5" fill="#b00000"/>
+  <text x="400" y="308" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">⚠ 2F Corridor — Bullying</text>
+
+  <!-- Gymnasium — Pending (amber) -->
+  <circle cx="1050" cy="280" r="12" fill="#d97706" opacity="0.3">
+    <animate attributeName="r" values="10;18;10" dur="1.9s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.06;0.4" dur="1.9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1050" cy="280" r="9" fill="#c2680a" stroke="#fff" stroke-width="1.5"/>
+  <text x="1050" y="284" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">!</text>
+  <rect x="980" y="296" width="140" height="17" rx="8.5" fill="#c2680a"/>
+  <text x="1050" y="308" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">⚠ Gym — Slip/Fall</text>
+
+  <!-- Canteen — Resolved (green) -->
+  <circle cx="750" cy="560" r="9" fill="#2e8b57" stroke="#fff" stroke-width="1.5"/>
+  <text x="750" y="564" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">✓</text>
+  <rect x="670" y="576" width="162" height="17" rx="8.5" fill="#2e8b57"/>
+  <text x="751" y="588" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">✓ Canteen — Resolved</text>
+
+  <!-- Basketball Court — Pending -->
+  <circle cx="195" cy="565" r="9" fill="#c2680a" stroke="#fff" stroke-width="1.5"/>
+  <text x="195" y="569" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">!</text>
+  <rect x="120" y="580" width="150" height="17" rx="8.5" fill="#c2680a"/>
+  <text x="195" y="592" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">⚠ Court — Property Dmg</text>
+
+  <!-- ===== COMPASS ===== -->
+  <circle cx="1140" cy="740" r="28" fill="#fff" stroke="#800000" stroke-width="1.5" filter="url(#shadow)"/>
+  <polygon points="1140,716 1134,738 1146,738" fill="#800000"/>
+  <polygon points="1140,764 1134,742 1146,742" fill="#aaa"/>
+  <text x="1140" y="712" font-size="8.5" font-weight="700" fill="#800000" text-anchor="middle">N</text>
+  <text x="1140" y="772" font-size="8" fill="#888" text-anchor="middle">S</text>
+  <text x="1114" y="745" font-size="8" fill="#888" text-anchor="middle">W</text>
+  <text x="1166" y="745" font-size="8" fill="#888" text-anchor="middle">E</text>
+
+  <!-- ===== LEGEND ===== -->
+  <rect x="22" y="308" width="156" height="118" rx="6" fill="rgba(255,255,255,0.90)" stroke="#ccc" stroke-width="1"/>
+  <text x="34" y="326" font-size="9" font-weight="700" fill="#800000">LEGEND</text>
+  <rect x="34" y="332" width="14" height="10" rx="2" fill="#fff9f9" stroke="#800000" stroke-width="1.2"/>
+  <text x="54" y="341" font-size="8.5" fill="#444">Building</text>
+  <circle cx="41" cy="354" r="5" fill="#b00000" stroke="#fff" stroke-width="1"/>
+  <text x="54" y="358" font-size="8.5" fill="#444">Active Incident</text>
+  <circle cx="41" cy="370" r="5" fill="#c2680a" stroke="#fff" stroke-width="1"/>
+  <text x="54" y="374" font-size="8.5" fill="#444">Pending</text>
+  <circle cx="41" cy="386" r="5" fill="#2e8b57" stroke="#fff" stroke-width="1"/>
+  <text x="54" y="390" font-size="8.5" fill="#444">Resolved</text>
+  <rect x="34" y="398" width="14" height="10" rx="1" fill="#b0bec5"/>
+  <text x="54" y="407" font-size="8.5" fill="#444">Road / Path</text>
+
+  <!-- Footer -->
+  <text x="34" y="850" font-size="8" fill="#888">SENTRA Campus Map — incident markers update in real time as reports are filed.</text>
+  <text x="1178" y="850" font-size="8" fill="#bbb" text-anchor="end">© 2026 Global Solutions INC.</text>
+
+</svg>

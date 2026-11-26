@@ -254,9 +254,43 @@
           <div class="panel-card">
             <div class="panel-card-header">
               <div class="panel-card-title"><i class="fas fa-map-location-dot"></i> Facility Mapping</div>
+              <div class="panel-card-actions">
+                <button class="btn-maroon btn-sm" id="mapTabFloor" data-map-tab="floor">
+                  <i class="fas fa-building"></i> Floor Plan
+                </button>
+                <button class="btn-soft btn-sm" id="mapTabCampus" data-map-tab="campus">
+                  <i class="fas fa-map"></i> Campus View
+                </button>
+              </div>
             </div>
-            <p class="facility-desc">An interactive virtual diagram of the school premises that pinpoints the exact location of reported incidents or ongoing emergencies.</p>
-            <img src="blueprint.svg" alt="School Facility Map" class="facility-map-img" />
+            <p class="facility-desc">
+              An interactive virtual diagram of the school premises that pinpoints the exact
+              location of reported incidents or ongoing emergencies. Toggle between the
+              floor plan and the full campus overview.
+            </p>
+
+            <!-- Floor Plan view -->
+            <div id="mapViewFloor" class="map-view-panel">
+              <div class="map-scroll-wrap">
+                <img src="facility-map.svg" alt="School Floor Plan" class="facility-map-img" />
+              </div>
+              <p class="map-view-caption">
+                <i class="fas fa-info-circle"></i>
+                Ground Floor — Main Academic Building.
+                Pulsing markers indicate active or pending incidents.
+              </p>
+            </div>
+
+            <!-- Campus View -->
+            <div id="mapViewCampus" class="map-view-panel u-hidden">
+              <div class="map-scroll-wrap">
+                <img src="campus-map.svg" alt="School Campus Overview Map" class="facility-map-img" />
+              </div>
+              <p class="map-view-caption">
+                <i class="fas fa-info-circle"></i>
+                Aerial campus overview showing all buildings, courts, and facilities.
+              </p>
+            </div>
           </div>
         </section>
 

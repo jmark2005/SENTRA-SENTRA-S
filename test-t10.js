@@ -46,7 +46,11 @@ db.prepare(`
 `).run(ADMIN_USER, 't10admin@test.local', adminHash, 'T10 Admin User', adminRole.id);
 
 // Clean up any leftover signup users from previous runs
+db.prepare('PRAGMA foreign_keys = OFF').run();
+db.prepare("DELETE FROM notifications WHERE user_id IN (SELECT id FROM users WHERE username IN ('t10_newteacher', 't10_dupuser'))").run();
+db.prepare("DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE username IN ('t10_newteacher', 't10_dupuser'))").run();
 db.prepare("DELETE FROM users WHERE username IN ('t10_newteacher', 't10_dupuser')").run();
+db.prepare('PRAGMA foreign_keys = ON').run();
 
 // ---------------------------------------------------------------------------
 // 2. Start server on port 3093
@@ -172,7 +176,7 @@ async function runTests() {
         username: 't10_newteacher',
         password: 'TeachPass1!',
         confirm_password: 'TeachPass1!',
-        role: 'teacher',
+        requested_role: 'teacher',
       },
       cookie: csrfCookie,
       csrfToken,
@@ -188,6 +192,92 @@ async function runTests() {
     // Look up the new user id for later checks
     const newUser = db.prepare("SELECT id FROM users WHERE username = 't10_newteacher'").get();
     if (newUser) newUserId = newUser.id;
+  }
+
+  // ---- Check 3b: requested_role is stored; role_id stays placeholder -------
+  {
+    if (!newUserId) {
+      fail('requested_role stored, role_id is placeholder', 'newUserId not set');
+    } else {
+      const row = db.prepare(
+        "SELECT requested_role, role_id FROM users WHERE id = ?"
+      ).get(newUserId);
+      const teacherRoleId = db.prepare("SELECT id FROM roles WHERE name = 'teacher'").get().id;
+
+      if (row && row.requested_role === 'teacher' && row.role_id === teacherRoleId) {
+        pass('requested_role stored as "teacher"; role_id is placeholder teacher role');
+      } else {
+        fail('requested_role stored as "teacher"; role_id is placeholder teacher role',
+          `requested_role=${row && row.requested_role}, role_id=${row && row.role_id}, teacher_id=${teacherRoleId}`);
+      }
+    }
+  }
+
+  // ---- Check 3c: Signup with role_id or sysadmin role in body is rejected --
+  {
+    const { csrfToken, csrfCookie } = await fetchCsrf();
+    // Attempt to inject role_id directly (should fail — role is required via requested_role only)
+    const r1 = await request({
+      method: 'POST',
+      path: '/api/users/signup',
+      body: {
+        full_name: 'Hacker',
+        id_number: '2024-HACK-001',
+        email: 't10hacker1@test.local',
+        username: 't10_hacker1',
+        password: 'HackPass1!',
+        confirm_password: 'HackPass1!',
+        role_id: 1,                   // attempt to inject role_id — must be ignored/rejected
+        requested_role: 'teacher',    // valid requested_role present
+      },
+      cookie: csrfCookie,
+      csrfToken,
+    });
+    // Server ignores role_id; the account is created with placeholder role, not id=1 if that differs
+    if (r1.status === 201) {
+      // Verify the role_id stored is still the placeholder (teacher), not whatever was injected
+      const hackerRow = db.prepare("SELECT role_id FROM users WHERE username = 't10_hacker1'").get();
+      const teacherRoleId = db.prepare("SELECT id FROM roles WHERE name = 'teacher'").get().id;
+      // Clean up the hacker account
+      db.prepare('PRAGMA foreign_keys = OFF').run();
+      db.prepare("DELETE FROM users WHERE username = 't10_hacker1'").run();
+      db.prepare('PRAGMA foreign_keys = ON').run();
+      if (hackerRow && hackerRow.role_id === teacherRoleId) {
+        pass('Signup with injected role_id: stored role_id is still placeholder, injection ignored');
+      } else {
+        fail('Signup with injected role_id: stored role_id is still placeholder, injection ignored',
+          `stored role_id=${hackerRow && hackerRow.role_id}, expected=${teacherRoleId}`);
+      }
+    } else if (r1.status === 400 || r1.status === 422) {
+      pass('Signup with injected role_id → rejected (400/422)');
+    } else {
+      fail('Signup with injected role_id: expected 201 (injection ignored) or 400/422',
+        `status=${r1.status}, body=${JSON.stringify(r1.body)}`);
+    }
+
+    // Attempt to send requested_role = 'sysadmin' — must be rejected
+    const { csrfToken: ct2, csrfCookie: cc2 } = await fetchCsrf();
+    const r2 = await request({
+      method: 'POST',
+      path: '/api/users/signup',
+      body: {
+        full_name: 'Hacker2',
+        id_number: '2024-HACK-002',
+        email: 't10hacker2@test.local',
+        username: 't10_hacker2',
+        password: 'HackPass1!',
+        confirm_password: 'HackPass1!',
+        requested_role: 'sysadmin',   // not in allowlist
+      },
+      cookie: cc2,
+      csrfToken: ct2,
+    });
+    if (r2.status === 400 && r2.body && r2.body.error && r2.body.error.includes('Invalid requested_role')) {
+      pass('Signup with requested_role="sysadmin" → 400 Invalid requested_role');
+    } else {
+      fail('Signup with requested_role="sysadmin" → 400 Invalid requested_role',
+        `status=${r2.status}, body=${JSON.stringify(r2.body)}`);
+    }
   }
 
   // ---- Check 4: Login with pending account → 401 ---------------------------
@@ -258,11 +348,12 @@ async function runTests() {
         r.body &&
         r.body.id === newUserId &&
         r.body.username === 't10_newteacher' &&
-        r.body.status === 'Pending'
+        r.body.status === 'Pending' &&
+        r.body.requested_role === 'teacher'
       ) {
-        pass(`GET /api/users/${newUserId} → 200, correct data`);
+        pass(`GET /api/users/${newUserId} → 200, correct data, requested_role present`);
       } else {
-        fail(`GET /api/users/${newUserId} → 200, correct data`,
+        fail(`GET /api/users/${newUserId} → 200, correct data, requested_role present`,
           `status=${r.status}, body=${JSON.stringify(r.body)}`);
       }
     }
@@ -279,7 +370,7 @@ async function runTests() {
       const r = await request({
         method: 'PATCH',
         path: `/api/users/${newUserId}/status`,
-        body: { status: 'Active' },
+        body: { status: 'Active', role: 'teacher' },
         cookie: adminCookie,
         csrfToken: ct,
       });
@@ -384,7 +475,7 @@ async function runTests() {
         username: 't10_newteacher', // already exists
         password: 'DupPass1!',
         confirm_password: 'DupPass1!',
-        role: 'student',
+        requested_role: 'student',
       },
       cookie: csrfCookie,
       csrfToken,
@@ -411,7 +502,7 @@ async function runTests() {
         username: 't10_weakpass',
         password: 'password', // no uppercase, no digit
         confirm_password: 'password',
-        role: 'student',
+        requested_role: 'student',
       },
       cookie: csrfCookie,
       csrfToken,
