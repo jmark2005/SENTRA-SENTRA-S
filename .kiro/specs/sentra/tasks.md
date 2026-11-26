@@ -165,166 +165,166 @@ Full implementation of the S.E.N.T.R.A. system — an integrated school safety a
   - Build incident submission form in all five reporter dashboards (teacher, guidance, safetyofficer, schoolhead, admin — and student when flag ON): category dropdown, date (max today, rejects future), time, location text, campus location dropdown (hidden if empty), description, involved-parties (non-Student: student number lookup + free-text; Student role: free-text only). File upload zone with client-side preview and inline server validation errors. Build incident list view with filter bar (status, category, date range). Build incident detail panel with all fields, parties, attachments, and activity timeline. Status transition buttons based on role and state machine.
   - Test (browser): Submit → ref shown in confirmation → in list. Future date → inline error. Teacher has no Restrict toggle. SchHead restricts → disappears from Teacher list.
 
-- [ ] T-21: Incident Attachments
+- [x] T-21: Incident Attachments
   - Depends on: T-20
   - Configure multer to uploads/ directory; filename=uuid.ext. Implement POST /api/incidents/:id/attachments: check ≤3 attachments; validate mime (image/jpeg, image/png, application/pdf) and size (≤5MB) server-side; store in attachments table; write audit log. Implement GET /api/attachments/:id/download: permission check; stream from uploads/; write audit log.
   - Test: Upload 4 → 4th rejected "maximum 3 attachments". Upload .docx → rejected. Upload valid 4.9MB PDF → accepted. Download without auth → 401.
 
-- [ ] T-22: Incident Review, Classify, and Restrict
+- [x] T-22: Incident Review, Classify, and Restrict
   - Depends on: T-21
   - Implement PATCH /api/incidents/:id/classify (SysAdmin, SchHead, SafetyOff): body {severity}; if Submitted also transition to Under Review; timeline entry; audit log. Implement PATCH /api/incidents/:id/status: enforce state machine from design.md §US-3.4; check role permissions; require resolution_summary for Resolved; reject Under Review → Assigned if severity null; append to incident_activity_log; audit log. Implement PATCH /api/incidents/:id/restrict (SysAdmin/SchHead only): toggle is_restricted; timeline entry; audit log. Verify GET /api/incidents hides restricted from Teacher/Guidance/SafetyOff unless assigned.
   - Test: Classify Submitted → severity set, status Under Review. Submitted → Assigned → 422. Teacher closes → 403. Restrict → not in Teacher list.
 
-- [ ] T-23: Incident Archive and Restore
+- [x] T-23: Incident Archive and Restore
   - Depends on: T-22
   - Implement PATCH /api/incidents/:id/archive and PATCH /api/incidents/:id/restore (SysAdmin only). Archiving non-Closed requires confirmed:true in body. Write audit log. Implement GET /api/incidents/archived (SysAdmin only). Confirm GET /api/incidents excludes archived for all roles.
   - Test: Archive without confirmed:true → 400. Archive with confirmed:true → hidden from all lists. Restore → visible again.
 
-- [ ] T-24: Assignment, Acknowledgement, and Actions
+- [x] T-24: Assignment, Acknowledgement, and Actions
   - Depends on: T-23
   - Implement POST /api/incidents/:id/assign (SchHead only): reject with 422 if severity null; insert incident_assignments rows; transition to Assigned; notify each assigned user; timeline entry; audit log. Implement POST /api/incidents/:id/acknowledge (assigned user only): update acknowledged_at; transition to In Progress; timeline entry; audit log. Implement POST /api/incidents/:id/actions: validate fields; insert incident_activity_log entry_type=Action with optional follow_up_date; audit log (do NOT write reminder_log here). Implement GET /api/incidents/:id/timeline returning all activity log entries ordered by created_at ASC.
   - Test: Assign → notification. Acknowledge → In Progress. Add action with follow-up date → timeline has 4 entries in order.
 
-- [ ] T-24B: Incident Response UI
+- [x] T-24B: Incident Response UI
   - Depends on: T-24
   - In incident detail panel (from T-20B): add controls shown only when valid for role and status per state machine: Classify (severity select), Assign (multi-select of SafetyOff/Guidance/Teacher users), Acknowledge, Add Action (description + optional follow-up date), mark For Follow-Up, Resolve (resolution summary required), Close (closure summary required), Restrict toggle (SysAdmin/SchHead), Archive (SysAdmin). Show server errors inline. Refresh timeline after every action.
   - Test (browser): Run Workflow A. Teacher sees no Restrict toggle. SchHead restricts → disappears from Teacher list.
 
-- [ ] T-25: Incident Closure
+- [x] T-25: Incident Closure
   - Depends on: T-24B
   - PATCH /api/incidents/:id/status to Closed: require closure_summary; set closed_by, closed_at; append timeline closure entry; write audit log. Any further status change on a Closed incident → 422 "incident is closed."
   - Test: Close without closure_summary → 422. Close with summary → status=Closed. Subsequent status change → 422.
 
-- [ ] T-26: Reminders and Overdue Job
+- [x] T-26: Reminders and Overdue Job
   - Depends on: T-25
   - Create src/jobs/reminders.job.js, run every reminders_job_interval_minutes (default 60), export runOnce() for tests. Incident follow-ups: for each open incident, find latest incident_activity_log entry with follow_up_date. If date=today and no reminder_log row (kind=incident_followup_due): notify assigned personnel and SchHead; insert reminder_log in same transaction. If date<today and no reminder_log row (kind=incident_followup_overdue): notify with overdue message; insert reminder_log in same transaction. Referral follow-ups: same logic using latest referral_followups.next_followup for each Ongoing referral (kinds referral_followup_due and referral_followup_overdue). Write audit log per notice. Start job in src/server.js.
   - Test: Incident with follow-up=today → one "due" notice; runOnce() again → none. Date=yesterday → one "overdue"; run again → none. Same for referral.
 
-- [ ] T-27: Referral Submission and Routing
+- [x] T-27: Referral Submission and Routing
   - Depends on: T-26, T-15
   - Create src/repositories/referral.repository.js and src/services/referral.service.js. Implement POST /api/referrals: validate student lookup; insert status=Pending; notify all active Guidance users; audit log. Implement GET /api/referrals (role-scoped: Guidance sees all unassigned Pending + assigned to self; Teacher sees own submissions; SchHead/SysAdmin see all; exclude archived). Implement GET /api/referrals/:id.
   - Test: Teacher submits → Guidance sees in queue. Teacher cannot see another student's referral.
 
-- [ ] T-27B: Referral Submission UI
+- [x] T-27B: Referral Submission UI
   - Depends on: T-27
   - Add Referrals section to Teacher, Guidance, SchHead, and SysAdmin dashboards: submit form (student search, referral type, date, remarks labelled "Administrative remarks only — do not record counseling notes or clinical information") via api.post('/api/referrals'). List view from GET /api/referrals with status badges.
   - Test (browser): Teacher submits → appears in their list and in Guidance queue.
 
-- [ ] T-28: Referral Assignment, Follow-Ups, and Completion
+- [x] T-28: Referral Assignment, Follow-Ups, and Completion
   - Depends on: T-27B
   - Implement PATCH /api/referrals/:id/assign (Guidance/SchHead only): set assigned_to; transition to Ongoing; notify assigned user; audit log. Implement POST /api/referrals/:id/followups: insert referral_followups entry (block with 422 if Completed or Referred); audit log (do NOT write reminder_log here). Implement PATCH /api/referrals/:id/status to Completed or Referred: require completion_note or referred_destination; enforce state machine; make read-only; audit log. Implement PATCH /api/referrals/:id/archive and restore (SysAdmin only); audit log.
   - Test: Pending → Completed (skipping Ongoing) → 422. Add follow-up to Completed → 422. next_followup set → entry saved, no reminder_log row yet.
 
-- [ ] T-28B: Referral Management UI
+- [x] T-28B: Referral Management UI
   - Depends on: T-28
   - In dashboard-guidance.html: queue view (unassigned Pending + assigned to me), referral detail, Assign, Add Follow-Up (description, date, optional next date), Complete (completion note required), Refer (destination required), Archive and Restore (SysAdmin only). Completed and Referred referrals shown read-only.
   - Test (browser): Run Workflow B end to end through the UI.
 
-- [ ] T-29: Attendance Recording and Submission
+- [x] T-29: Attendance Recording and Submission
   - Depends on: T-16, T-13
   - Create src/repositories/attendance.repository.js and src/services/attendance.service.js. Implement GET /api/attendance/classes (Teacher sees own; SchHead/Guidance see all). Implement GET /api/attendance/classes/:classId/date/:date returning existing or empty records. Implement POST /api/attendance/classes/:classId/date/:date: bulk insert/replace; validate Teacher is assigned to class; audit log. Implement PATCH /api/attendance/:id (correction): Teacher may correct same calendar day only in school_timezone; SysAdmin/SchHead any time; require non-empty reason; insert attendance_corrections row; update record; audit log with old/new status and reason.
   - Test: Submit attendance → all records saved. Correct same day → allowed with reason. Next day: Teacher → 403 "edit window closed". SysAdmin → allowed.
 
-- [ ] T-29B: Attendance Entry UI
+- [x] T-29B: Attendance Entry UI
   - Depends on: T-29
   - In dashboard-teacher.html: class picker (own classes), date picker (max today), roster table with Present/Absent/Tardy per student, Submit via api.post('/api/attendance/classes/:classId/date/:date'). If records exist for date, load them; Correct button opens modal requiring reason via api.patch('/api/attendance/:id'). SysAdmin and SchHead see same screen for all classes and can correct anytime.
   - Test (browser): Record attendance → saved. Correct without reason → inline error. Teacher corrects next day → blocked; SysAdmin allowed.
 
-- [ ] T-30: Attendance Threshold Flagging Job
+- [x] T-30: Attendance Threshold Flagging Job
   - Depends on: T-29B
   - After each attendance save, query absence/tardy counts for student+class+semester against system_settings thresholds. If threshold crossed and no reminder_log row (kind=attendance_threshold, target_table=attendance_records, target_id=student_id, due_key={class_id}|{semester}|{threshold_type}): create notification for class adviser; insert reminder_log row; audit log. Notification text: "Student [Name, No.] has reached the attendance threshold for review. Please review and determine if follow-up is needed."
   - Test: Absence threshold=2; record 2 absences → adviser notified once. Record 3rd → no second notification.
 
-- [ ] T-31: Attendance Summary and Archive
+- [x] T-31: Attendance Summary and Archive
   - Depends on: T-30
   - Implement GET /api/attendance/summary?student=&class=&section=&semester=&school_year=&from=&to= (aggregate counts per student; role-scoped; audit log on access). Implement PATCH /api/attendance/archive and restore (SysAdmin only, sets is_archived on matching records; audit log). Confirm archived records excluded from summaries and standard views.
   - Test: Archive class semester attendance → summary returns no data. Restore → data reappears.
 
-- [ ] T-31B: Attendance Summary UI
+- [x] T-31B: Attendance Summary UI
   - Depends on: T-31
   - Add Attendance Summary section with filters (student, class, section, semester, school year, date range) calling GET /api/attendance/summary; show present/absent/tardy/percentage per student. SysAdmin only: Archive and Restore buttons for class+semester with confirmAction.
   - Test (browser): Summary matches recorded data. Archive → empty. Restore → data returns.
 
-- [ ] T-32: Emergency Alert
+- [x] T-32: Emergency Alert
   - Depends on: T-09B, T-18B
   - Implement POST /api/notifications/emergency (permission send_emergency_alert): body {message} required; create Emergency Alert notifications for all active users in roles from emergency_alert_recipient_roles setting; audit log. Add Emergency Alert button and modal to dashboard-common.js with disclaimer: "Sending this alert does not replace official emergency procedures. Contact emergency services directly." Render unread Emergency Alert notifications with distinct red style and banner.
   - Test: Send alert → all recipient-role users see banner within 30s; excluded role does not. Audit log entry exists.
 
-- [ ] T-33: Role-Scoped Dashboard API
+- [x] T-33: Role-Scoped Dashboard API
   - Depends on: T-32, T-28B, T-31B
   - Implement GET /api/dashboard/summary returning role-scoped metrics: SysAdmin/SchHead (total active students, open incidents by status, pending incidents by category, pending referrals, attendance rate current semester, pending user accounts); Teacher (class attendance summary, incidents reported, referrals submitted); Guidance (referrals assigned by status, follow-ups due today and this week); SafetyOff (open assigned incidents, overdue follow-ups). Connect each role dashboard HTML to GET /api/dashboard/summary and render stat cards using current_school_year and current_semester from system_settings.
   - Test: Seed data → dashboard API counts match underlying data. Teacher cannot see another teacher's data.
 
-- [ ] T-34: Reports and CSV/PDF Export
+- [x] T-34: Reports and CSV/PDF Export
   - Depends on: T-33
   - Create src/services/report.service.js with query functions per report type. Implement GET /api/reports/incidents?from=&to=&category=&status=&format=csv|pdf (role-scoped; excludes restricted/archived for unauthorized). Implement GET /api/reports/response?from=&to=&format=csv|pdf (includes resolution_summary). Implement GET /api/reports/referrals?from=&to=&type=&status=&format=csv|pdf. Implement GET /api/reports/audit-log?from=&to=&actor=&action_type=&format=csv|pdf (SysAdmin + authorized SchHead). Teacher scoped to own incidents and classes. PDF via pdfkit with school_name from settings; CSV via csv-stringify. Audit log per export.
   - Test: Export incidents CSV → columns match spec. Export PDF → valid PDF. Teacher exports all incidents → 403. Audit log shows export entry.
 
-- [ ] T-34B: Reports UI
+- [x] T-34B: Reports UI
   - Depends on: T-34
   - Add Reports panel to authorized dashboards: one card per report (Incident Summary, Response/Task Completion, Attendance Summary, Referral Summary, Audit Log) with filters and CSV/PDF download buttons (plain GET links). Show only reports the user's role may export.
   - Test (browser): Download each report as CSV and PDF. Teacher sees only allowed reports.
 
-- [ ] T-35: Data Retention Review
+- [x] T-35: Data Retention Review
   - Depends on: T-34B
   - Implement GET /api/retention/review (SysAdmin only): query incidents, referrals, attendance_records where created_at < NOW - retention_years * 365 days; return grouped list with record type, ID/reference, creation date, age. No auto-archive or auto-delete. Add Retention Review panel to dashboard-admin.html.
   - Test: Set retention_years_incidents=0 → all incidents in review. Archive one → disappears from list.
 
-- [ ] T-35B: Automated Tests
+- [x] T-35B: Automated Tests
   - Depends on: T-35
   - Add npm test script using Node's built-in node:test; tests use temporary SQLite file (DB_PATH) created fresh per run. Cover: incident and referral state machines (valid and invalid transitions), unique reference numbers under concurrent calls, append-only triggers (UPDATE/DELETE on 4 protected tables throw), reminder_log deduplication in runOnce(), RBAC denials per permission code, notification count endpoint does not extend idle session.
   - Test: `npm test` passes on a fresh clone.
 
-- [ ] T-36: Escalation Rules API and Configuration
+- [x] T-36: Escalation Rules API and Configuration
   - Depends on: T-35B
   - Implement GET /api/escalation-rules, POST /api/escalation-rules, PATCH /api/escalation-rules/:id (SysAdmin only). Allow time_target_minutes as low as 1 for testing. Write audit log. Build Escalation Rules panel in dashboard-admin.html.
   - Test: Create rule (Critical + In Progress, 1 minute) → appears in GET /api/escalation-rules.
 
-- [ ] T-37: Escalation Job
+- [x] T-37: Escalation Job
   - Depends on: T-36
   - Create src/jobs/escalation.job.js: runs every escalation_job_interval_minutes (from system_settings, default 15 min). For each active rule: query incidents matching severity and watch_status where last status-change incident_activity_log entry is older than time_target_minutes. For each matched incident: check reminder_log for kind=escalation, target_id=incident_id, due_key={rule_id}|{status_entered_at}. If no row: create Escalated notification for escalation_user_id; append escalation entry to incident_activity_log; insert reminder_log row; write audit log. Start job in src/server.js.
   - Test: Critical incident In Progress; rule (Critical + In Progress, 1 min); wait 90s; run job → escalation notification for SchHead; run again → no duplicate.
 
-- [ ] T-38: Trend Analysis API
+- [x] T-38: Trend Analysis API
   - Depends on: T-37
   - Implement GET /api/trends/by-category?from=&to=&period= (group by category_id and time bucket; return [{category, count, period}]). Implement GET /api/trends/by-location?from=&to=&category= (group by campus_location_id; raw location_text for null; return [{location_name, count}]). Implement GET /api/trends/over-time?from=&to=&period=daily|weekly|monthly|semester (return [{period_label, count}]). Guard all with view_dashboard permission; SafetyOff read-only.
   - Test: 5 incidents across 3 categories → by-category returns 3 rows with correct counts.
 
-- [ ] T-39: Trend Dashboard UI
+- [x] T-39: Trend Dashboard UI
   - Depends on: T-38
   - Create public/js/trends.js: fetch all three trend endpoints and render bar chart (incidents by category), line chart (over time), and top-locations table using vendored Chart.js. Add date range/category/location filter controls; re-fetch on change. Add Trend Analysis section to dashboard-admin.html, dashboard-schoolhead.html, and (read-only) dashboard-safetyofficer.html.
   - Test: Charts render without CSP errors; date filter updates chart; results match incident table counts.
 
-- [ ] T-40B: Campus Map View
+- [x] T-40B: Campus Map View
   - Depends on: T-39, T-19C
   - Implement GET /api/campus-locations/map-data?category=&from=&to= (aggregate non-restricted, non-archived incident counts per active location; return [{location_id, name, coord_x, coord_y, count, incidents:[{ref, category, status}]}]). Create public/js/map.js: render blueprint.svg or facility-map.svg; overlay div markers at (coord_x%, coord_y%); color-code by count (green 1–2, yellow 3–5, red 6+). Click handler: popup with location name, count, incident list (Teacher/Guidance: counts+refs only; SysAdmin/SchHead/SafetyOff: full detail link). Add category and date range filters; re-fetch on change. Add Campus Map section to authorized dashboards.
   - Test: Incidents at two locations → both markers with correct colors. Teacher: count+refs only. SysAdmin: full details.
 
-- [ ] T-41: End-to-End Incident Lifecycle Test
+- [x] T-41: End-to-End Incident Lifecycle Test
   - Depends on: T-40B
   - Using actual UI, run Workflow A from design.md §6.1 with test Teacher, SchHead, and SafetyOff accounts. Verify: submission → reference generated → review → severity set → assignment → acknowledgement → action logged → follow-up date set → resolution summary required → closure summary required → record read-only after close. Verify timeline shows all entries in order. Document and fix any bugs before T-42.
 
-- [ ] T-42: End-to-End Referral and Attendance Workflow Test
+- [x] T-42: End-to-End Referral and Attendance Workflow Test
   - Depends on: T-41
   - Run Workflow B: Teacher submits referral → Guidance sees in queue → assigns → adds follow-up → marks Completed. Run Workflow C: Teacher records attendance → SysAdmin sets threshold to 1 → Teacher records 1 absence → class adviser receives threshold notification (check wording). Adviser creates referral → Guidance notified. Fix any bugs before T-43.
 
-- [ ] T-43: Access Control Verification
+- [x] T-43: Access Control Verification
   - Depends on: T-42
   - Using RBAC matrix from requirements.md §13: for every permission code, verify at least one denied role receives 403. Verify Student cannot see another student's incident or profile. Verify restricted incident hidden from Teacher/Guidance/SafetyOff unless assigned. Verify audit log inaccessible to Teacher and standard Guidance. Document and fix failures.
 
-- [ ] T-44: Security Hardening Checklist
+- [x] T-44: Security Hardening Checklist
   - Depends on: T-43
   - Verify helmet headers on all responses. Verify CSP blocks inline scripts and external sources. Verify parameterized queries (attempt SQL injection in search fields). Verify CSRF (remove X-CSRF-Token → 403). Verify no session fixation (SID changes after login). Verify brute-force limit (11th login → 429). Verify attachment path traversal (GET /api/attachments/../../../package.json → 404/403). Scan git log for committed .env or plaintext passwords → none.
 
-- [ ] T-45: Usability and Responsive Layout Polish
+- [x] T-45: Usability and Responsive Layout Polish
   - Depends on: T-44
   - Test all 6 dashboards and all forms at 360px viewport width in Chrome DevTools. Test session warning modal, Emergency Alert modal, and confirmation modals on mobile. Ensure all tables have horizontal scroll on small screens. Verify sidebar collapses to hamburger on mobile. Fix layout breaks.
 
-- [ ] T-46: README and Backup Procedure
+- [x] T-46: README and Backup Procedure
   - Depends on: T-44
   - Write README.md: prerequisites (Node.js 20), setup steps (npm install, cp .env.example .env, node db/seeds/seed.js, npm start), environment variables table, backup procedure (better-sqlite3 .backup() API; copy .db and .db-wal files; daily schedule notes), restore procedure, notes on COOKIE_SECURE for HTTPS vs LAN HTTP. Verify .gitignore excludes .env, uploads/, *.db, *.db-wal, *.db-shm, node_modules/.
 
-- [ ] T-47: Final Regression Pass
+- [-] T-47: Final Regression Pass
   - Depends on: T-45, T-46
   - Re-run core module test cases from test-plan.md. Verify vendored assets still load. Verify seed script runs clean on fresh database. Verify all append-only triggers still fire. Tag final release commit.
 

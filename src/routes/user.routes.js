@@ -435,12 +435,6 @@ router.post('/:id/reset-password', authMiddleware, requirePermission('manage_acc
 
 // ---------------------------------------------------------------------------
 // GET /api/users/:id/participation — SysAdmin and SchoolHead only
-//
-// NOTE: The dateFilter helper interpolates `from`/`to` query values directly
-// into SQL using SQLite's date() function. These values are used only as
-// date string arguments to date(), which coerces them to NULL if malformed,
-// limiting injection risk. For stronger safety, switch to parameterised
-// date comparisons when query complexity allows.
 // ---------------------------------------------------------------------------
 router.get('/:id/participation', authMiddleware, requirePermission('view_participation'), (req, res) => {
   const userId = parseInt(req.params.id, 10);
@@ -455,48 +449,58 @@ router.get('/:id/participation', authMiddleware, requirePermission('view_partici
 
   const { from, to } = req.query;
 
-  // Build date filter clause
-  function dateFilter(col, tableAlias) {
-    const parts = [];
-    if (from) parts.push(`date(${tableAlias ? tableAlias + '.' : ''}${col}) >= date('${from}')`);
-    if (to)   parts.push(`date(${tableAlias ? tableAlias + '.' : ''}${col}) <= date('${to}')`);
-    return parts.length ? ' AND ' + parts.join(' AND ') : '';
+  // Build a parameterized date filter clause.
+  // Returns { clause: string, params: any[] } where clause uses only ? placeholders.
+  // The column name is a compile-time literal passed by the caller — never from user input.
+  function dateFilter(col) {
+    const parts  = [];
+    const params = [];
+    if (from) { parts.push(`date(${col}) >= date(?)`); params.push(from); }
+    if (to)   { parts.push(`date(${col}) <= date(?)`); params.push(to); }
+    return { clause: parts.length ? ' AND ' + parts.join(' AND ') : '', params };
   }
 
   // 1. Incidents reported by this user
+  const df1 = dateFilter('created_at');
   const incidentsReported = db.prepare(`
-    SELECT COUNT(*) AS n FROM incidents WHERE reporter_id = ? ${dateFilter('created_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM incidents WHERE reporter_id = ?${df1.clause}
+  `).get(userId, ...df1.params).n;
 
   // 2. Incident assignments to this user
+  const df2 = dateFilter('assigned_at');
   const incidentsAssigned = db.prepare(`
-    SELECT COUNT(*) AS n FROM incident_assignments WHERE assigned_to = ? ${dateFilter('assigned_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM incident_assignments WHERE assigned_to = ?${df2.clause}
+  `).get(userId, ...df2.params).n;
 
   // 3. Incident activity log entries by this user
+  const df3 = dateFilter('created_at');
   const incidentActivityEntries = db.prepare(`
-    SELECT COUNT(*) AS n FROM incident_activity_log WHERE actor_id = ? ${dateFilter('created_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM incident_activity_log WHERE actor_id = ?${df3.clause}
+  `).get(userId, ...df3.params).n;
 
   // 4. Referrals submitted by this user (referring_user)
+  const df4 = dateFilter('created_at');
   const referralsSubmitted = db.prepare(`
-    SELECT COUNT(*) AS n FROM referrals WHERE referring_user = ? ${dateFilter('created_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM referrals WHERE referring_user = ?${df4.clause}
+  `).get(userId, ...df4.params).n;
 
   // 5. Referrals assigned to this user
+  const df5 = dateFilter('created_at');
   const referralsAssigned = db.prepare(`
-    SELECT COUNT(*) AS n FROM referrals WHERE assigned_to = ? ${dateFilter('created_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM referrals WHERE assigned_to = ?${df5.clause}
+  `).get(userId, ...df5.params).n;
 
   // 6. Referral follow-ups by this user
+  const df6 = dateFilter('created_at');
   const referralFollowups = db.prepare(`
-    SELECT COUNT(*) AS n FROM referral_followups WHERE actor_id = ? ${dateFilter('created_at', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM referral_followups WHERE actor_id = ?${df6.clause}
+  `).get(userId, ...df6.params).n;
 
   // 7. Attendance records recorded by this user
+  const df7 = dateFilter('record_date');
   const attendanceRecorded = db.prepare(`
-    SELECT COUNT(*) AS n FROM attendance_records WHERE recorded_by = ? ${dateFilter('record_date', '')}
-  `).get(userId).n;
+    SELECT COUNT(*) AS n FROM attendance_records WHERE recorded_by = ?${df7.clause}
+  `).get(userId, ...df7.params).n;
 
   auditLog({
     actorId: req.user.id, actorName: req.user.full_name, actorRole: req.user.role,

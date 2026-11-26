@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login — SENTRA</title>
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="responsive.css" />
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
 </head>
+
 <body class="auth-page login-page">
 
   <div class="bg-layer">
@@ -64,19 +67,19 @@
         </div>
 
         <div class="role-tabs">
-          <input type="radio" name="role_tab" id="tab_sysadmin"      class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_schoolhead"     class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_teacher"        class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_guidance"       class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_safetyofficer"  class="tab-radio" />
-          <input type="radio" name="role_tab" id="tab_student"        class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_sysadmin" class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_schoolhead" class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_teacher" class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_guidance" class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_safetyofficer" class="tab-radio" />
+          <input type="radio" name="role_tab" id="tab_student" class="tab-radio" />
 
-          <label for="tab_sysadmin"     class="role-tab"><i class="fas fa-user-shield"></i> System Admin</label>
-          <label for="tab_schoolhead"   class="role-tab"><i class="fas fa-school"></i> School Head</label>
-          <label for="tab_teacher"      class="role-tab"><i class="fas fa-chalkboard-teacher"></i> Teacher</label>
-          <label for="tab_guidance"     class="role-tab"><i class="fas fa-heart-pulse"></i> Guidance</label>
+          <label for="tab_sysadmin" class="role-tab"><i class="fas fa-user-shield"></i> System Admin</label>
+          <label for="tab_schoolhead" class="role-tab"><i class="fas fa-school"></i> School Head</label>
+          <label for="tab_teacher" class="role-tab"><i class="fas fa-chalkboard-teacher"></i> Teacher</label>
+          <label for="tab_guidance" class="role-tab"><i class="fas fa-heart-pulse"></i> Guidance</label>
           <label for="tab_safetyofficer" class="role-tab"><i class="fas fa-shield-halved"></i> Safety Officer</label>
-          <label for="tab_student"      class="role-tab"><i class="fas fa-user-graduate"></i> Student</label>
+          <label for="tab_student" class="role-tab"><i class="fas fa-user-graduate"></i> Student</label>
         </div>
 
         <form class="login-form" id="loginForm" action="#" method="post" novalidate>
@@ -88,8 +91,8 @@
               <i class="fas fa-user"></i> Username
             </label>
             <div class="input-wrap">
-              <input type="text" id="username" name="username"
-                     placeholder="Enter your username" autocomplete="username" />
+              <input type="text" id="username" name="username" placeholder="Enter your username"
+                autocomplete="username" />
             </div>
           </div>
 
@@ -98,8 +101,8 @@
               <i class="fas fa-lock"></i> Password
             </label>
             <div class="input-wrap">
-              <input type="password" id="password" name="password"
-                     placeholder="Enter your password" autocomplete="current-password" />
+              <input type="password" id="password" name="password" placeholder="Enter your password"
+                autocomplete="current-password" />
             </div>
           </div>
 
@@ -139,4 +142,5 @@
   <script src="/js/login.js" defer></script>
 
 </body>
+
 </html>

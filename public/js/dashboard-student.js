@@ -20,8 +20,8 @@ var overviewInfo  = document.getElementById('overviewInfo');
 function renderInfo() {
   if (!profile) {
     infoContainer.innerHTML =
-      '<div style="text-align:center;padding:40px;color:var(--muted);">' +
-      '<i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i><br><br>Loading profile…</div>';
+      '<div class="profile-state">' +
+      '<i class="fas fa-spinner fa-spin profile-state-icon"></i><br><br>Loading profile…</div>';
     overviewInfo.innerHTML = '';
     return;
   }
@@ -59,10 +59,10 @@ function renderInfo() {
 
 function showProfileError(msg) {
   infoContainer.innerHTML =
-    '<div style="text-align:center;padding:40px;color:#c0392b;">' +
-    '<i class="fas fa-triangle-exclamation" style="font-size:1.5rem;"></i><br><br>' + msg + '</div>';
+    '<div class="profile-state is-error">' +
+    '<i class="fas fa-triangle-exclamation profile-state-icon"></i><br><br>' + msg + '</div>';
   overviewInfo.innerHTML =
-    '<div style="color:#c0392b;font-size:.85rem;padding:8px;">Profile unavailable.</div>';
+    '<div class="profile-unavailable">Profile unavailable.</div>';
 }
 
 // Load student profile via API
@@ -98,10 +98,10 @@ function openEditModal() {
   // Per NFR-03, students cannot edit protected record fields.
   // Show a read-only notice instead.
   editModalBody.innerHTML =
-    '<div style="text-align:center;padding:24px 16px;">' +
-      '<i class="fas fa-shield-halved" style="font-size:2rem;color:var(--maroon-dark);margin-bottom:12px;display:block;"></i>' +
-      '<p style="font-size:.93rem;color:var(--text);margin:0 0 8px;">Your student record is managed by the school administrator.</p>' +
-      '<p style="font-size:.85rem;color:var(--muted);margin:0;">If any information is incorrect, please contact your school administrator to request an update.</p>' +
+    '<div class="record-notice">' +
+      '<i class="fas fa-shield-halved record-notice-icon"></i>' +
+      '<p class="record-notice-title">Your student record is managed by the school administrator.</p>' +
+      '<p class="record-notice-sub">If any information is incorrect, please contact your school administrator to request an update.</p>' +
     '</div>';
   editModal.classList.add('open');
 }

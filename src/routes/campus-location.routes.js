@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const db = require('../repositories/db');
 const authMiddleware = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const { log: auditLog } = require('../services/audit.service');
@@ -14,6 +15,65 @@ const router = express.Router();
 router.get('/', authMiddleware, (req, res) => {
   const activeOnly = req.query.active_only === 'true';
   const data = activeOnly ? locationSvc.findAllActive() : locationSvc.findAll();
+  return res.json({ data });
+});
+
+// ── GET /api/campus-locations/map-data ───────────────────────────────────────
+// Aggregates non-restricted, non-archived incident counts per active location.
+// ?category=<id>  &from=YYYY-MM-DD  &to=YYYY-MM-DD
+// Returns [{ location_id, name, coord_x, coord_y, count, incidents:[{ref,category,status}] }]
+router.get('/map-data', authMiddleware, (req, res) => {
+  const { category, from, to } = req.query;
+  const { role } = req.user;
+
+  // Build incident filter conditions (non-archived, non-restricted for limited roles)
+  const incConditions = ['i.is_archived = 0', 'i.campus_location_id IS NOT NULL'];
+  const incParams = [];
+
+  if (role !== 'sysadmin' && role !== 'schoolhead' && role !== 'safetyofficer') {
+    incConditions.push('i.is_restricted = 0');
+  }
+  if (category) { incConditions.push('i.category_id = ?'); incParams.push(parseInt(category, 10)); }
+  if (from)     { incConditions.push('i.incident_date >= ?'); incParams.push(from); }
+  if (to)       { incConditions.push('i.incident_date <= ?'); incParams.push(to); }
+
+  const incWhere = 'WHERE ' + incConditions.join(' AND ');
+
+  // Fetch all active locations
+  const locations = db.prepare(
+    'SELECT id, name, coord_x, coord_y FROM campus_locations WHERE is_active = 1 ORDER BY name ASC'
+  ).all();
+
+  // Fetch matching incidents grouped by location with detail list
+  const incidentRows = db.prepare(`
+    SELECT i.campus_location_id AS location_id,
+           i.id, i.reference_number, i.status,
+           c.name AS category
+    FROM   incidents i
+    JOIN   incident_categories c ON c.id = i.category_id
+    ${incWhere}
+    ORDER  BY i.created_at DESC
+  `).all(...incParams);
+
+  // Group incidents by location_id
+  const incByLoc = {};
+  for (const row of incidentRows) {
+    if (!incByLoc[row.location_id]) incByLoc[row.location_id] = [];
+    incByLoc[row.location_id].push({ id: row.id, ref: row.reference_number, category: row.category, status: row.status });
+  }
+
+  // Build response — only include locations that have coords (can still include 0-count locations)
+  const data = locations
+    .filter(loc => loc.coord_x !== null && loc.coord_y !== null)
+    .map(loc => ({
+      location_id: loc.id,
+      name:        loc.name,
+      coord_x:     loc.coord_x,
+      coord_y:     loc.coord_y,
+      count:       (incByLoc[loc.id] || []).length,
+      incidents:   (incByLoc[loc.id] || []),
+    }));
+
   return res.json({ data });
 });
 

@@ -1,0 +1,10 @@
+'use strict';
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+const Database = require('better-sqlite3');
+const dbFile = path.resolve(__dirname, 'db', 'sentra.db');
+const db = new Database(dbFile);
+const triggers = db.prepare("SELECT name, tbl_name FROM sqlite_master WHERE type='trigger' ORDER BY tbl_name, name").all();
+console.log('Total triggers:', triggers.length);
+triggers.forEach(t => console.log(' ', t.tbl_name, '::', t.name));
+db.close();

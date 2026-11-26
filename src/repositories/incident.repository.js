@@ -58,13 +58,37 @@ function findById(id) {
            c.name  AS category_name,
            cl.name AS campus_location_name,
            u.full_name AS reporter_name,
-           u.role_id   AS reporter_role_id
+           u.role_id   AS reporter_role_id,
+           cb.full_name AS closed_by_name
     FROM   incidents i
     JOIN   incident_categories  c  ON c.id  = i.category_id
     LEFT JOIN campus_locations  cl ON cl.id = i.campus_location_id
     JOIN   users                u  ON u.id  = i.reporter_id
+    LEFT JOIN users             cb ON cb.id = i.closed_by
     WHERE  i.id = ?
   `).get(id);
+}
+
+/** Active assignments for the detail view. */
+function getAssignments(incidentId) {
+  return db.prepare(`
+    SELECT ia.assigned_to, u.full_name, r.name AS role, ia.assigned_at, ia.acknowledged_at
+    FROM   incident_assignments ia
+    JOIN   users u ON u.id = ia.assigned_to
+    JOIN   roles r ON r.id = u.role_id
+    WHERE  ia.incident_id = ? AND ia.is_active = 1
+    ORDER  BY ia.id ASC
+  `).all(incidentId);
+}
+
+/** Active users who can be assigned to incidents (Safety Officer, Guidance, Teacher). */
+function listAssignableUsers() {
+  return db.prepare(`
+    SELECT u.id, u.full_name, r.name AS role
+    FROM   users u JOIN roles r ON r.id = u.role_id
+    WHERE  u.status = 'Active' AND r.name IN ('safetyofficer', 'guidance', 'teacher')
+    ORDER  BY r.name, u.full_name
+  `).all();
 }
 
 // ── Find by reference number ──────────────────────────────────────────────────
@@ -110,26 +134,15 @@ function list({ userId, role, status, category_id, from, to, reporter } = {}) {
       )
     )`);
     params.push(userId);
-  } else if (role === 'teacher') {
-    // Reported by self OR assigned to self; restricted hidden
-    conditions.push(`i.is_restricted = 0`);
+  } else if (role === 'teacher' || role === 'guidance') {
+    // Assigned to self (even if restricted), OR reported by self and not restricted.
+    // Matches canUserView() in incident.service.js.
     conditions.push(`(
-      i.reporter_id = ?
-      OR EXISTS (
+      EXISTS (
         SELECT 1 FROM incident_assignments ia
         WHERE ia.incident_id = i.id AND ia.assigned_to = ? AND ia.is_active = 1
       )
-    )`);
-    params.push(userId, userId);
-  } else if (role === 'guidance') {
-    // Assigned to self OR reported by self; restricted hidden even if they reported it
-    conditions.push(`i.is_restricted = 0`);
-    conditions.push(`(
-      i.reporter_id = ?
-      OR EXISTS (
-        SELECT 1 FROM incident_assignments ia
-        WHERE ia.incident_id = i.id AND ia.assigned_to = ? AND ia.is_active = 1
-      )
+      OR (i.reporter_id = ? AND i.is_restricted = 0)
     )`);
     params.push(userId, userId);
   } else if (role === 'student') {
@@ -211,12 +224,19 @@ function getAttachments(incidentId) {
   `).all(incidentId);
 }
 
+function isActiveAssignee(incidentId, userId) {
+  return !!db.prepare(`
+    SELECT 1 FROM incident_assignments
+    WHERE  incident_id = ? AND assigned_to = ? AND is_active = 1
+  `).get(incidentId, userId);
+}
+
 // ── Activity log (timeline) ───────────────────────────────────────────────────
-function addTimelineEntry({ incident_id, actor_id, entry_type, description, old_status, new_status }) {
+function addTimelineEntry({ incident_id, actor_id, entry_type, description, old_status, new_status, follow_up_date }) {
   return db.prepare(`
     INSERT INTO incident_activity_log
-      (incident_id, actor_id, entry_type, description, old_status, new_status)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (incident_id, actor_id, entry_type, description, old_status, new_status, follow_up_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     incident_id,
     actor_id,
@@ -224,30 +244,137 @@ function addTimelineEntry({ incident_id, actor_id, entry_type, description, old_
     description,
     old_status ?? null,
     new_status ?? null,
+    follow_up_date ?? null,
   );
 }
 
 function getTimeline(incidentId) {
+  // created_at has one-second resolution, so id breaks ties to keep insert order.
   return db.prepare(`
     SELECT al.id, al.entry_type, al.description, al.old_status, al.new_status,
            al.follow_up_date, al.created_at,
-           u.full_name AS actor_name, u.id AS actor_id
+           u.full_name AS actor_name, u.id AS actor_id, r.name AS actor_role
     FROM   incident_activity_log al
     JOIN   users u ON u.id = al.actor_id
+    JOIN   roles r ON r.id = u.role_id
     WHERE  al.incident_id = ?
-    ORDER  BY al.created_at ASC
+    ORDER  BY al.created_at ASC, al.id ASC
   `).all(incidentId);
+}
+
+// ── Workflow updates ──────────────────────────────────────────────────────────
+// Each update is guarded by the status the caller saw, so a concurrent change
+// makes it affect 0 rows instead of overwriting.
+
+const NOW_SQL = "strftime('%Y-%m-%dT%H:%M:%SZ','now')";
+
+function setClassification(id, expectedStatus, severity, newStatus) {
+  return db.prepare(`
+    UPDATE incidents SET severity = ?, status = ?, updated_at = ${NOW_SQL}
+    WHERE  id = ? AND status = ?
+  `).run(severity, newStatus, id, expectedStatus).changes;
+}
+
+function setStatus(id, expectedStatus, newStatus, resolutionSummary) {
+  return db.prepare(`
+    UPDATE incidents
+    SET    status = ?, resolution_summary = COALESCE(?, resolution_summary), updated_at = ${NOW_SQL}
+    WHERE  id = ? AND status = ?
+  `).run(newStatus, resolutionSummary ?? null, id, expectedStatus).changes;
+}
+
+function setRestricted(id, value) {
+  return db.prepare(`
+    UPDATE incidents SET is_restricted = ?, updated_at = ${NOW_SQL}
+    WHERE  id = ? AND is_restricted = ?
+  `).run(value, id, value ? 0 : 1).changes;
+}
+
+// Marks an incident as changed while it is still in one of `statuses`.
+function touch(id, statuses) {
+  return db.prepare(`
+    UPDATE incidents SET updated_at = ${NOW_SQL}
+    WHERE  id = ? AND status IN (${statuses.map(() => '?').join(', ')})
+  `).run(id, ...statuses).changes;
+}
+
+// ── Assignments ───────────────────────────────────────────────────────────────
+function findUsersByIds(ids) {
+  if (!ids.length) return [];
+  return db.prepare(`
+    SELECT u.id, u.full_name, u.status, r.name AS role
+    FROM   users u JOIN roles r ON r.id = u.role_id
+    WHERE  u.id IN (${ids.map(() => '?').join(', ')})
+  `).all(...ids);
+}
+
+/** Adds an active assignment unless the user already has one on this incident. */
+function addAssignment(incidentId, userId, assignedBy) {
+  return db.prepare(`
+    INSERT INTO incident_assignments (incident_id, assigned_to, assigned_by)
+    SELECT ?, ?, ?
+    WHERE NOT EXISTS (
+      SELECT 1 FROM incident_assignments
+      WHERE incident_id = ? AND assigned_to = ? AND is_active = 1
+    )
+  `).run(incidentId, userId, assignedBy, incidentId, userId).changes;
+}
+
+function findActiveAssignment(incidentId, userId) {
+  return db.prepare(`
+    SELECT id, acknowledged_at FROM incident_assignments
+    WHERE  incident_id = ? AND assigned_to = ? AND is_active = 1
+    ORDER  BY id DESC LIMIT 1
+  `).get(incidentId, userId);
+}
+
+function acknowledgeAssignment(assignmentId) {
+  return db.prepare(`
+    UPDATE incident_assignments SET acknowledged_at = ${NOW_SQL}
+    WHERE  id = ? AND acknowledged_at IS NULL
+  `).run(assignmentId).changes;
+}
+
+/** Resolved → Closed with the closure record (T-25). */
+function closeIncident(id, closureSummary, closedBy) {
+  return db.prepare(`
+    UPDATE incidents
+    SET    status = 'Closed', closure_summary = ?, closed_by = ?,
+           closed_at = ${NOW_SQL}, updated_at = ${NOW_SQL}
+    WHERE  id = ? AND status = 'Resolved'
+  `).run(closureSummary, closedBy, id).changes;
+}
+
+// Archiving only flips the flag, so restore returns the incident to its last status.
+function setArchived(id, value) {
+  return db.prepare(`
+    UPDATE incidents SET is_archived = ?, updated_at = ${NOW_SQL}
+    WHERE  id = ? AND is_archived = ?
+  `).run(value, id, value ? 0 : 1).changes;
 }
 
 module.exports = {
   generateRefNumber,
   create,
   findById,
+  getAssignments,
+  listAssignableUsers,
   findByRef,
   list,
   getParties,
   addParty,
   getAttachments,
+  isActiveAssignee,
   addTimelineEntry,
   getTimeline,
+  setClassification,
+  setStatus,
+  setRestricted,
+  setArchived,
+  closeIncident,
+  touch,
+  findUsersByIds,
+  addAssignment,
+  findActiveAssignment,
+  acknowledgeAssignment,
 };

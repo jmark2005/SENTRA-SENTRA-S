@@ -25,6 +25,15 @@ document.addEventListener('DOMContentLoaded', function () {
       { label: 'Audit Log',         section: 'audit-log',     icon: 'fa-scroll',                  group: 'Tools'        },
     ],
     onSectionChange: function (id) {
+      if (id === 'overview' && typeof loadDashboardSummary === 'function') loadDashboardSummary();
+      if (id === 'reports' && typeof initReports === 'function') initReports({ rootId: 'reportsRoot' });
+      if (id === 'referrals' && typeof initReferrals === 'function') {
+        initReferrals({ rootId: 'referralsRoot' });
+      }
+      if (id === 'attendance' && typeof initAttendance === 'function') {
+        initAttendance({ rootId: 'attendanceRoot' });
+        if (typeof initAttendanceSummary === 'function') initAttendanceSummary({ rootId: 'attendanceSummaryRoot' });
+      }
       if (id === 'incidents') {
         if (typeof initIncidents === 'function') {
           initIncidents({
@@ -33,6 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
             submitSectionId: null,
           });
         }
+      }
+      if (id === 'trends' && typeof initTrends === 'function') {
+        initTrends({ rootId: 'trendsRootSH' });
+      }
+      if (id === 'campus-map' && typeof initCampusMap === 'function') {
+        initCampusMap({ rootId: 'campusMapRootSH', role: 'schoolhead' });
       }
     },
   });

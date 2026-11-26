@@ -21,17 +21,17 @@ async function loadPermissions() {
   const wrap = document.getElementById('permTableWrap');
 
   if (!roleId) {
-    wrap.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">Select a role above to view and edit its permissions.</p>';
+    wrap.innerHTML = '<p class="muted-note">Select a role above to view and edit its permissions.</p>';
     return;
   }
 
-  wrap.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">Loading…</p>';
+  wrap.innerHTML = '<p class="muted-note">Loading…</p>';
 
   try {
     const res = await api.get(`/api/roles/${roleId}/permissions`);
     const data = await res.json();
     if (!res.ok) {
-      wrap.innerHTML = `<p style="color:#c0392b;">${data.error || 'Failed to load permissions.'}</p>`;
+      wrap.innerHTML = `<p class="text-error">${data.error || 'Failed to load permissions.'}</p>`;
       return;
     }
 
@@ -40,29 +40,31 @@ async function loadPermissions() {
     const isSysadmin = roleName === 'sysadmin';
     const PROTECTED = ['manage_accounts', 'manage_roles_permissions'];
 
-    let html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Permission</th><th>Module</th><th>Description</th><th style="text-align:center;">Granted</th></tr></thead><tbody>';
+    let html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Permission</th><th>Module</th><th>Description</th><th class="cell-center">Granted</th></tr></thead><tbody>';
 
     perms.forEach(p => {
       const checked = p.granted ? 'checked' : '';
       const isProtected = isSysadmin && PROTECTED.includes(p.code);
       const disabled = isProtected ? 'disabled title="Protected — cannot remove from sysadmin"' : '';
       html += `<tr>
-        <td><code style="font-size:.82rem;">${p.code}</code></td>
-        <td style="font-size:.82rem;color:var(--muted);">${p.module}</td>
-        <td style="font-size:.82rem;">${p.description}</td>
-        <td style="text-align:center;">
+        <td><code class="perm-code">${p.code}</code></td>
+        <td class="perm-module">${p.module}</td>
+        <td class="perm-desc">${p.description}</td>
+        <td class="cell-center">
           <input type="checkbox" ${checked} ${disabled}
-            data-perm-id="${p.id}" data-role-id="${roleId}"
-            onchange="togglePermission(this)">
+            data-perm-id="${p.id}" data-role-id="${roleId}">
         </td>
       </tr>`;
     });
 
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
+    wrap.querySelectorAll('input[data-perm-id]').forEach(cb => {
+      cb.addEventListener('change', () => togglePermission(cb));
+    });
 
   } catch (err) {
-    wrap.innerHTML = `<p style="color:#c0392b;">Error: ${err.message}</p>`;
+    wrap.innerHTML = `<p class="text-error">Error: ${err.message}</p>`;
   }
 }
 

@@ -14,7 +14,7 @@ async function loadSettings() {
     const res  = await api.get('/api/settings');
     const data = await res.json();
     if (!res.ok) {
-      wrap.innerHTML = `<p style="color:#c0392b;">${data.error || 'Failed to load settings.'}</p>`;
+      wrap.innerHTML = `<p class="text-error">${data.error || 'Failed to load settings.'}</p>`;
       return;
     }
     const s = data.data || {};
@@ -54,13 +54,13 @@ async function loadSettings() {
       </div>
       <div class="field-row">
         <div class="field"><label>Incident Retention (years)</label>
-          <input type="number" id="set_retention_years_incidents" value="${esc(s.retention_years_incidents)}" min="1" max="100"></div>
+          <input type="number" id="set_retention_years_incidents" value="${esc(s.retention_years_incidents)}" min="0" max="100"></div>
         <div class="field"><label>Referral Retention (years)</label>
-          <input type="number" id="set_retention_years_referrals" value="${esc(s.retention_years_referrals)}" min="1" max="100"></div>
+          <input type="number" id="set_retention_years_referrals" value="${esc(s.retention_years_referrals)}" min="0" max="100"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Attendance Retention (years)</label>
-          <input type="number" id="set_retention_years_attendance" value="${esc(s.retention_years_attendance)}" min="1" max="100"></div>
+          <input type="number" id="set_retention_years_attendance" value="${esc(s.retention_years_attendance)}" min="0" max="100"></div>
         <div class="field"><label>Student Feature</label>
           <select id="set_student_feature_enabled">
             <option value="0" ${s.student_feature_enabled==='0'?'selected':''}>Disabled</option>
@@ -71,7 +71,7 @@ async function loadSettings() {
         <input id="set_emergency_alert_recipient_roles" value="${esc(s.emergency_alert_recipient_roles)}"></div>
     `;
   } catch (err) {
-    wrap.innerHTML = `<p style="color:#c0392b;">Error: ${err.message}</p>`;
+    wrap.innerHTML = `<p class="text-error">Error: ${err.message}</p>`;
   }
 }
 

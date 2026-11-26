@@ -22,11 +22,11 @@ async function loadParticipation() {
   const result = document.getElementById('participationResult');
 
   if (!userId) {
-    result.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">Select a user above.</p>';
+    result.innerHTML = '<p class="muted-note">Select a user above.</p>';
     return;
   }
 
-  result.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">Loading…</p>';
+  result.innerHTML = '<p class="muted-note">Loading…</p>';
 
   let url = `/api/users/${userId}/participation`;
   const params = [];
@@ -39,7 +39,7 @@ async function loadParticipation() {
     const data = await res.json();
 
     if (!res.ok) {
-      result.innerHTML = `<p style="color:#c0392b;">${data.error || 'Failed.'}</p>`;
+      result.innerHTML = `<p class="text-error">${data.error || 'Failed.'}</p>`;
       return;
     }
 
@@ -56,25 +56,25 @@ async function loadParticipation() {
     ];
 
     result.innerHTML = `
-      <p style="font-size:.88rem;color:var(--muted);margin-bottom:12px;">
+      <p class="part-summary">
         Showing participation for <strong>${u.full_name}</strong> (${u.role})
         ${from || to ? `· ${from||''} → ${to||''}` : '· all time'}.
       </p>
       <div class="data-table-wrap">
         <table class="data-table">
-          <thead><tr><th>Category</th><th style="text-align:right;">Count</th></tr></thead>
+          <thead><tr><th>Category</th><th class="cell-right">Count</th></tr></thead>
           <tbody>
             ${rows.map(([label, count]) => `
               <tr>
                 <td>${label}</td>
-                <td style="text-align:right;font-weight:700;">${count}</td>
+                <td class="cell-right cell-strong">${count}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>`;
   } catch (err) {
-    result.innerHTML = `<p style="color:#c0392b;">Error: ${err.message}</p>`;
+    result.innerHTML = `<p class="text-error">Error: ${err.message}</p>`;
   }
 }
 

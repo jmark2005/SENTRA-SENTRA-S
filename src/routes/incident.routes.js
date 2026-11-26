@@ -6,6 +6,7 @@ const authMiddleware         = require('../middleware/auth');
 const { requirePermission }  = require('../middleware/rbac');
 const { log: auditLog }      = require('../services/audit.service');
 const incidentSvc            = require('../services/incident.service');
+const workflow               = require('../services/incident-workflow.service');
 const notificationSvc        = require('../services/notification.service');
 const { getSetting }         = require('../services/settings.service');
 const db                     = require('../repositories/db');
@@ -195,7 +196,13 @@ router.post(
 
 // ── GET /api/incidents/archived ───────────────────────────────────────────────
 // MUST be before /:id
-router.get('/archived', authMiddleware, (req, res) => {
+// ── GET /api/incidents/assignable-users ───────────────────────────────────────
+// For the Assign picker (T-24B). MUST be before /:id.
+router.get('/assignable-users', authMiddleware, requirePermission('assign_incidents'), (req, res) => {
+  return res.json({ data: incidentSvc.listAssignableUsers() });
+});
+
+router.get('/archived', authMiddleware, requirePermission('archive_incidents'), (req, res) => {
   if (req.user.role !== 'sysadmin') {
     return res.status(403).json({ error: 'Forbidden.' });
   }
@@ -251,41 +258,11 @@ router.get('/:id', authMiddleware, requirePermission('submit_incident'), (req, r
     return res.status(404).json({ error: 'Incident not found.' });
   }
 
-  // Archived incidents: only SysAdmin can view
-  if (incident.is_archived && req.user.role !== 'sysadmin') {
+  // Archived / restricted / role-scoped visibility (shared with attachment routes)
+  if (!incidentSvc.canUserView(req.user, incident)) {
     return res.status(403).json({ error: 'Forbidden.' });
   }
-
-  // Restricted incidents: visible only to SysAdmin, SchHead, and assigned users
-  if (incident.is_restricted) {
-    const { role, id: userId } = req.user;
-    if (role !== 'sysadmin' && role !== 'schoolhead') {
-      const assignment = db.prepare(`
-        SELECT 1 FROM incident_assignments
-        WHERE incident_id = ? AND assigned_to = ? AND is_active = 1
-      `).get(id, userId);
-      if (!assignment) {
-        return res.status(403).json({ error: 'Forbidden.' });
-      }
-    }
-  }
-
-  // Role-scoped access for non-admin roles
-  const { role, id: userId } = req.user;
-  if (role === 'teacher' || role === 'guidance') {
-    const isReporter  = incident.reporter_id === userId;
-    const isAssigned  = db.prepare(`
-      SELECT 1 FROM incident_assignments
-      WHERE incident_id = ? AND assigned_to = ? AND is_active = 1
-    `).get(id, userId);
-    if (!isReporter && !isAssigned) {
-      return res.status(403).json({ error: 'Forbidden.' });
-    }
-  } else if (role === 'student') {
-    const flag = getSetting('student_feature_enabled');
-    if (!flag || flag === '0') return res.status(403).json({ error: 'Forbidden.' });
-    if (incident.reporter_id !== userId) return res.status(403).json({ error: 'Forbidden.' });
-  }
+  const { role } = req.user;
 
   // Build full detail response
   const parties     = incidentSvc.getParties(id);
@@ -303,7 +280,90 @@ router.get('/:id', authMiddleware, requirePermission('submit_incident'), (req, r
     });
   }
 
-  return res.json({ ...incident, parties, attachments, timeline });
+  const assignments = incidentSvc.getAssignments(id);
+
+  return res.json({ ...incident, parties, attachments, timeline, assignments });
+});
+
+// ── Review and response workflow (T-22 onward) ───────────────────────────────
+
+/**
+ * Wraps a workflow action: loads the incident, applies the same visibility
+ * rule as GET /:id, runs the action, and replies with the updated incident.
+ * The action writes its own timeline entry and audit log.
+ */
+function workflowRoute(action) {
+  return (req, res) => {
+    if (!/^[1-9]\d{0,9}$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid incident ID.' });
+    }
+    const id = parseInt(req.params.id, 10);
+    const incident = incidentSvc.findById(id);
+    if (!incident) return res.status(404).json({ error: 'Incident not found.' });
+    if (!incidentSvc.canUserView(req.user, incident)) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
+    let result;
+    try {
+      result = action({ user: req.user, ip: req.ip }, incident, req.body || {});
+    } catch (err) {
+      if (err instanceof workflow.WorkflowError) {
+        return res.status(err.status).json({ error: err.message });
+      }
+      throw err;
+    }
+    if (result && result.response) {
+      return res.status(result.response.status).json(result.response.body);
+    }
+    return res.json(incidentSvc.findById(id));
+  };
+}
+
+// PATCH /api/incidents/:id/classify  { severity }
+router.patch('/:id/classify', authMiddleware, requirePermission('manage_incidents'),
+  workflowRoute(workflow.classify));
+
+// PATCH /api/incidents/:id/status  { status, resolution_summary? }
+// Per-transition role and permission checks live in the workflow service.
+router.patch('/:id/status', authMiddleware, workflowRoute(workflow.changeStatus));
+
+// PATCH /api/incidents/:id/restrict  { is_restricted }
+router.patch('/:id/restrict', authMiddleware, requirePermission('manage_incidents'),
+  workflowRoute(workflow.setRestricted));
+
+// PATCH /api/incidents/:id/archive  { confirmed? }  — confirmed: true needed unless Closed
+router.patch('/:id/archive', authMiddleware, requirePermission('archive_incidents'),
+  workflowRoute(workflow.archive));
+
+// PATCH /api/incidents/:id/restore
+router.patch('/:id/restore', authMiddleware, requirePermission('archive_incidents'),
+  workflowRoute(workflow.restore));
+
+// POST /api/incidents/:id/assign  { user_ids: [...] }  — School Head only
+router.post('/:id/assign', authMiddleware, requirePermission('assign_incidents'),
+  workflowRoute(workflow.assign));
+
+// POST /api/incidents/:id/acknowledge  — assigned user only
+router.post('/:id/acknowledge', authMiddleware, requirePermission('respond_incidents'),
+  workflowRoute(workflow.acknowledge));
+
+// POST /api/incidents/:id/actions  { description, follow_up_date? }  — assigned users or School Head
+router.post('/:id/actions', authMiddleware, requirePermission('respond_incidents'),
+  workflowRoute(workflow.addAction));
+
+// GET /api/incidents/:id/timeline — same visibility as the detail view; not for students
+router.get('/:id/timeline', authMiddleware, requirePermission('submit_incident'), (req, res) => {
+  if (!/^[1-9]\d{0,9}$/.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid incident ID.' });
+  }
+  const id = parseInt(req.params.id, 10);
+  const incident = incidentSvc.findById(id);
+  if (!incident) return res.status(404).json({ error: 'Incident not found.' });
+  if (req.user.role === 'student' || !incidentSvc.canUserView(req.user, incident)) {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+  return res.json({ data: incidentSvc.getTimeline(id) });
 });
 
 module.exports = router;

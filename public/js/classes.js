@@ -154,7 +154,7 @@ function renderManageStudentsBody(classId, className, students) {
     const list = res.ok ? (data.data || []) : [];
 
     if (!list.length) {
-      resultsEl.innerHTML = '<p class="dash-muted-intro" style="padding:8px 12px;">No students found.</p>';
+      resultsEl.innerHTML = '<p class="dash-muted-intro search-empty">No students found.</p>';
       return;
     }
     resultsEl.innerHTML = list.map(s => `

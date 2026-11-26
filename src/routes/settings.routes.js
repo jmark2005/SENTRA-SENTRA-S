@@ -55,8 +55,10 @@ function validateSetting(key, value) {
     case 'retention_years_incidents':
     case 'retention_years_referrals':
     case 'retention_years_attendance': {
-      const n = parseInt(value, 10);
-      if (isNaN(n) || n < 1 || n > 100) return `${key} must be between 1 and 100.`;
+      // 0 is allowed: every record is then flagged for review (T-35, TC-6.20).
+      if (!/^\d{1,3}$/.test(value.trim()) || Number(value) > 100) {
+        return `${key} must be a whole number of years from 0 to 100.`;
+      }
       break;
     }
     case 'emergency_alert_recipient_roles': {

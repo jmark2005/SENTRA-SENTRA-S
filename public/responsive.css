@@ -1,0 +1,527 @@
+/* ============================================================
+   SENTRA — Responsive Layout Polish  (T-45)
+   Breakpoints: 768px (tablet/sidebar), 480px (mobile forms/modals)
+   Imported LAST in <head> after tokens.css and styles.css.
+   All rules use CSS custom properties from tokens.css.
+   No inline styles, no CDN links.
+
+   NOTE: box-sizing: border-box is already set globally in styles.css
+   and is NOT duplicated here.
+   ============================================================ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   1. TABLE SCROLL
+   .data-table-wrap already has overflow-x:auto in styles.css.
+   .table-wrapper is a generic alias used in some panels.
+   ══════════════════════════════════════════════════════════════ */
+
+.data-table-wrap,
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  /* Ensure tables don't collapse to unreadable widths on mobile */
+  table {
+    min-width: 500px;
+  }
+  /* data-table already has min-width:680px in styles.css — keep that */
+  table.data-table {
+    min-width: 680px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   2. SIDEBAR OFF-CANVAS  (≤768 px)
+   styles.css already handles ≤900px. This block targets the
+   768px cut-off required by NFR-05 and adds a sidebar-overlay
+   for cases where the HTML does not include a dashBackdrop div.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .dash-sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    width: 260px;
+  }
+  .dash-sidebar.open {
+    transform: translateX(0);
+  }
+  .dash-menu-toggle {
+    display: block !important;
+  }
+  .dash-main {
+    margin-left: 0;
+    width: 100%;
+  }
+  .main-content,
+  .content-area {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .dash-sidebar {
+    width: 240px;
+  }
+}
+
+/* Sidebar overlay — created by dashboard-common.js when no dashBackdrop exists */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 90;
+}
+.sidebar-overlay.visible {
+  display: block;
+}
+
+/* dash-backdrop (the HTML-stamped overlay) — z-index alignment */
+@media (max-width: 768px) {
+  .dash-backdrop {
+    z-index: 90;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   3. NAVIGATION ACTIVE STATE
+   ══════════════════════════════════════════════════════════════ */
+
+.nav-item.active > a,
+.nav-link.active {
+  background: rgba(244, 160, 160, 0.15);
+  border-left: 3px solid var(--maroon-light, #c0392b);
+  color: #fff;
+  font-weight: 600;
+}
+
+.dash-nav-item.active {
+  background: linear-gradient(135deg, var(--maroon-dark), var(--maroon-light));
+  border-left: 3px solid #f4a0a0;
+  color: var(--white);
+}
+
+.dash-nav-item.active i {
+  color: var(--white);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   4. INLINE FIELD VALIDATION ERRORS
+   ══════════════════════════════════════════════════════════════ */
+
+.field-error {
+  color: #f4a0a0;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+input.error,
+select.error,
+textarea.error {
+  border-color: #f4a0a0 !important;
+  box-shadow: 0 0 0 3px rgba(244, 160, 160, 0.2);
+}
+
+/* Auth-page glass inputs */
+.input-wrap input.error,
+.input-wrap select.error {
+  border-color: #f4a0a0 !important;
+  box-shadow: 0 0 0 3px rgba(244, 160, 160, 0.2);
+}
+
+/* Dashboard .field inputs */
+.field input.error,
+.field select.error,
+.field textarea.error {
+  border-color: #f4a0a0 !important;
+  box-shadow: 0 0 0 3px rgba(244, 160, 160, 0.15);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. FORMS — STACK ON MOBILE  (≤480 px)
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .field-row,
+  .form-row,
+  .form-grid {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .form-row > *,
+  .form-grid > * {
+    width: 100%;
+  }
+
+  /* Signup two-column name row */
+  .signup-form .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Action / button rows */
+  .form-actions,
+  .btn-row,
+  .action-bar,
+  .row-actions,
+  .inc-panel-header-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Sum filter bar */
+  .sum-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   6. MODALS — FIT VIEWPORT ON SMALL SCREENS  (≤480 px)
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .modal,
+  .modal-content,
+  .modal-box,
+  .modal-panel {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 1rem auto;
+    border-radius: var(--radius);
+  }
+
+  /* Centre modals vertically with some top padding */
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-start;
+    padding-top: 8vh;
+  }
+
+  /* Session warning and confirm modals (injected by dashboard-common.js) */
+  #sessionWarningModal .modal,
+  #confirmModal .modal {
+    width: 95vw;
+    max-width: 95vw;
+    margin: 1rem auto;
+  }
+
+  /* Reduce modal inner padding */
+  .modal-body   { padding: 16px; }
+  .modal-header { padding: 14px 16px; }
+  .modal-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .modal-footer .btn,
+  .modal-footer button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   7. DASHBOARD GRIDS
+   styles.css: 4-col at full width, 2-col at ≤1100px, 1-col at ≤640px.
+   This fills the gap: explicit 2-col at ≤768px, 1-col at ≤480px.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .dashboard-grid,
+  .stats-grid,
+  .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-grid,
+  .dashboard-grid,
+  .stats-grid,
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-grid.stat-grid-5 {
+    grid-template-columns: 1fr;
+  }
+
+  .sum-blocks {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   8. STAT-CARDS — FLEX-WRAP FALLBACK
+   For any flex-based stat rows not using the CSS grid .stat-grid
+   ══════════════════════════════════════════════════════════════ */
+
+.stat-cards,
+.summary-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.stat-card,
+.summary-card {
+  min-width: 140px;
+  flex: 1 1 140px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   9. FILTER / ACTION BARS — WRAP ON SMALL SCREENS
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .panel-card-header {
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .panel-card-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .panel-card-actions .search-input,
+  .panel-card-actions .filter-select {
+    flex: 1 1 120px;
+    min-width: 100px;
+    max-width: 100%;
+  }
+
+  .ia-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .att-actions,
+  .ref-actions,
+  .ref-search-row,
+  .ia-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stat-row {
+    flex-wrap: wrap;
+  }
+  .stat-row > * {
+    min-width: 140px;
+  }
+
+  .search-input,
+  .filter-select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   10. LOGIN ROLE TABS — HORIZONTAL SCROLL AT SMALL WIDTHS
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .role-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+  }
+
+  .role-tabs::-webkit-scrollbar {
+    display: none;                /* Chrome/Safari */
+  }
+
+  .role-tab {
+    flex: 0 0 auto;
+    min-width: 70px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   11. NOTIFICATION DRAWER — FULL WIDTH ON VERY SMALL SCREENS
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .notif-drawer {
+    right: -100vw;
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .notif-drawer.open {
+    right: 0;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   12. TOUCH TARGETS — MINIMUM 44 px  (≤768 px)
+   Prevents iOS input zoom: font-size ≥ 1rem on form controls.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  button,
+  .btn,
+  a.btn,
+  [role="button"],
+  .role-tab,
+  .dash-nav-item,
+  .dash-logout {
+    min-height: 44px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 1rem; /* prevents iOS auto-zoom on focus */
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   13. DASHBOARD CONTENT — COMPACT PADDING ON MOBILE
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .dash-content {
+    padding: 16px;
+  }
+
+  .dash-user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-content {
+    padding: 12px;
+  }
+
+  .dash-topbar {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .dash-page-title {
+    font-size: 1rem;
+  }
+
+  .panel-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   14. DISCLAIMER BANNER — WRAP ON MOBILE
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .dash-disclaimer-banner {
+    padding: 8px 14px;
+    font-size: .74rem;
+    flex-wrap: wrap;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   15. EMERGENCY ALERT BANNER & MODAL — STACK ON MOBILE
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .emergency-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .emergency-banner-ack {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .emergency-panel {
+    max-width: 100%;
+    padding: 0;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   16. TOAST — FULL WIDTH ON VERY SMALL SCREENS
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 400px) {
+  .toast {
+    right: 10px;
+    left: 10px;
+    bottom: 16px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   17. ATTENDANCE & REFERRAL GRIDS
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .att-grid,
+  .attendance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   18. LANDING PAGE — HAMBURGER VISIBLE ON MOBILE
+   (.hamburger is display:none by default in styles.css)
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex !important;
+  }
+}

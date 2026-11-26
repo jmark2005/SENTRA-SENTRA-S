@@ -68,14 +68,14 @@ async function loadUsers() {
 
   const tbody   = document.getElementById('userTableBody');
   const countEl = document.getElementById('userCount');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted);">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" class="cell-msg">Loading...</td></tr>';
 
   try {
     const res  = await api.get(url);
     const data = await res.json();
 
     if (!res.ok) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c0392b;padding:24px;">${data.error || 'Failed to load users.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="cell-msg is-error">${data.error || 'Failed to load users.'}</td></tr>`;
       return;
     }
 
@@ -83,7 +83,7 @@ async function loadUsers() {
     countEl.textContent = `Showing ${users.length} user(s).`;
 
     if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted);">No users found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="cell-msg">No users found.</td></tr>';
       return;
     }
 
@@ -111,7 +111,7 @@ async function loadUsers() {
     attachActionHandlers(users);
 
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c0392b;padding:24px;">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="cell-msg is-error">Error: ${err.message}</td></tr>`;
   }
 }
 
@@ -182,7 +182,7 @@ function attachActionHandlers(users) {
             const results = document.getElementById('student-link-results');
             const list = res.ok ? (data.data || []) : [];
             if (!list.length) {
-              results.innerHTML = '<p class="dash-muted-intro" style="padding:8px 12px;">No students found.</p>';
+              results.innerHTML = '<p class="dash-muted-intro search-empty">No students found.</p>';
               return;
             }
             results.innerHTML = list.map(s => `
@@ -258,7 +258,7 @@ function attachActionHandlers(users) {
             if (res.ok) loadUsers();
             else { const d = await res.json(); alert(d.error || 'Failed to reject.'); }
           },
-          '<textarea id="reject-reason-input" placeholder="Optional rejection reason..." style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:.88rem;resize:vertical;min-height:70px;"></textarea>'
+          '<textarea id="reject-reason-input" class="reject-reason-textarea" placeholder="Optional rejection reason..."></textarea>'
         );
       }
 
@@ -299,10 +299,16 @@ function attachActionHandlers(users) {
             document.getElementById('confirmModalTitle').innerHTML = '<i class="fas fa-key"></i> Temporary Password';
             document.getElementById('confirmModalMessage').textContent = `Password reset for "${name}". Share this temporary password securely — it will NOT be shown again.`;
             document.getElementById('confirmModalExtra').innerHTML = `
-              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-                <code id="tempPwDisplay" style="flex:1;background:var(--maroon-faint);padding:10px 14px;border-radius:8px;font-size:1rem;font-weight:700;letter-spacing:.05em;border:1px solid var(--border);">${escaped}</code>
-                <button class="btn-maroon btn-sm" onclick="navigator.clipboard.writeText('${d.temp_password}').then(()=>this.textContent='Copied!').catch(()=>{})">Copy</button>
+              <div class="temp-pw-row">
+                <code id="tempPwDisplay" class="temp-pw-code">${escaped}</code>
+                <button type="button" class="btn-maroon btn-sm" id="tempPwCopyBtn">Copy</button>
               </div>`;
+            const copyBtn = document.getElementById('tempPwCopyBtn');
+            copyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText(d.temp_password)
+                .then(() => { copyBtn.textContent = 'Copied!'; })
+                .catch(() => {});
+            });
             document.getElementById('confirmModalOk').textContent = 'Done';
             document.getElementById('confirmModalCancel').style.display = 'none';
             document.getElementById('confirmModal').classList.add('open');

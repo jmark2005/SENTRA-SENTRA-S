@@ -13,10 +13,31 @@ require('./repositories/db');
 
 const app = express();
 
-// Security headers — CSP is NOT enabled yet (enabled in T-17B)
+// Security headers, including CSP (T-17B). Everything is served from 'self':
+// scripts and styles are files under public/ (no inline <script>, style= or
+// on*= handlers), fonts are vendored under public/vendor/fontawesome, and
+// img-src allows data: only for the SVG pattern inlined in styles.css.
+// Attachment downloads replace this with their own stricter policy.
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'none'"],
+        styleSrc: ["'self'"],
+        // Only over HTTPS: on plain-HTTP LAN installs this would break every asset load.
+        ...(COOKIE_SECURE ? { upgradeInsecureRequests: [] } : {}),
+      },
+    },
   })
 );
 
@@ -103,5 +124,30 @@ app.use('/api/campus-locations', campusLocationRoutes);
 
 const incidentRoutes = require('./routes/incident.routes');
 app.use('/api/incidents', incidentRoutes);
+
+// POST /api/incidents/:id/attachments and GET /api/attachments/:id/download
+const attachmentRoutes = require('./routes/attachment.routes');
+app.use('/api', attachmentRoutes);
+
+const referralRoutes = require('./routes/referral.routes');
+app.use('/api/referrals', referralRoutes);
+
+const attendanceRoutes = require('./routes/attendance.routes');
+app.use('/api/attendance', attendanceRoutes);
+
+const dashboardRoutes = require('./routes/dashboard.routes');
+app.use('/api/dashboard', dashboardRoutes);
+
+const reportRoutes = require('./routes/report.routes');
+app.use('/api/reports', reportRoutes);
+
+const retentionRoutes = require('./routes/retention.routes');
+app.use('/api/retention', retentionRoutes);
+
+const escalationRuleRoutes = require('./routes/escalation-rule.routes');
+app.use('/api/escalation-rules', escalationRuleRoutes);
+
+const trendsRoutes = require('./routes/trends.routes');
+app.use('/api/trends', trendsRoutes);
 
 module.exports = app;

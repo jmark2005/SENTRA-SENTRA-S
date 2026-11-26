@@ -24,7 +24,7 @@
 
   // ── Escape ───────────────────────────────────────────────────────────────────
   function esc(v) {
-    return String(v === null || v === undefined ? '')
+    return String(v === null || v === undefined ? '' : v)
       .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
       .replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -63,8 +63,9 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
   var _parties = [];
-  var _files = [];
+  var _formUploadZone = null; // SentraAttachments controller for the submit form
   var _currentRole = 'teacher';
+  var _listCfg = null;        // last list config, refreshed after detail actions
 
   // ─────────────────────────────────────────────────────────────────────────────
   // INCIDENT LIST
@@ -111,20 +112,20 @@
 
     tbody.innerHTML = rows.map(function (inc) {
       var restricted = inc.is_restricted
-        ? ' <span class="status-pill" style="background:#f9e5e5;color:#c0392b;" title="Restricted">RESTRICTED</span>'
+        ? ' <span class="status-pill pill-restricted" title="Restricted">RESTRICTED</span>'
         : '';
       return (
         '<tr>' +
           '<td>' +
             '<strong>' + esc(inc.reference_number) + '</strong>' + restricted + '<br>' +
-            '<small style="color:var(--muted);">' + esc(inc.category_name) + '</small>' +
+            '<small class="muted-inline">' + esc(inc.category_name) + '</small>' +
           '</td>' +
           '<td>' + esc(inc.reporter_name || '—') + '</td>' +
           '<td>' + fmtDate(inc.incident_date) + '</td>' +
           '<td>' +
             (inc.severity
               ? '<span class="incident-severity" data-severity="' + esc(inc.severity) + '">' + esc(inc.severity) + '</span>'
-              : '<span style="color:var(--muted);">—</span>') +
+              : '<span class="muted-inline">—</span>') +
           '</td>' +
           '<td><span class="status-pill ' + statusClass(inc.status) + '">' + esc(inc.status) + '</span></td>' +
           '<td>' +
@@ -142,15 +143,131 @@
   // INCIDENT DETAIL MODAL
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // Current user (id, role, permissions), fetched once per page
+  var _me = null;
+  function getMe() {
+    if (!_me) {
+      _me = api.get('/api/auth/me')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (me) {
+          return me
+            ? { id: me.id, role: me.role, permissions: me.permissions || [] }
+            : { id: null, role: _currentRole, permissions: [] };
+        })
+        .catch(function () { _me = null; return { id: null, role: _currentRole, permissions: [] }; });
+    }
+    return _me;
+  }
+
+  // Stored timestamps are UTC (…Z); show them in the viewer's local time.
+  function fmtStamp(s) {
+    if (!s) return '';
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return esc(s);
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function roleLabel(role) {
+    var labels = global.SentraIncidentActions ? global.SentraIncidentActions.ROLE_LABELS : {};
+    return labels[role] || role || '';
+  }
+
+  function infoItem(label, valueHtml, wide) {
+    return '<div class="info-item' + (wide ? ' info-item-span' : '') + '"><label>' + label + '</label><span>' + valueHtml + '</span></div>';
+  }
+
+  function buildDetailHtml(inc) {
+    var badges =
+      '<div class="incident-badges">' +
+        '<span class="status-pill ' + statusClass(inc.status) + '">' + esc(inc.status) + '</span>' +
+        (inc.is_restricted ? '<span class="status-pill pill-restricted">RESTRICTED</span>' : '') +
+        (inc.is_archived ? '<span class="status-pill pill-archived">ARCHIVED</span>' : '') +
+        (inc.severity ? '<span class="incident-severity" data-severity="' + esc(inc.severity) + '">' + esc(inc.severity) + '</span>' : '') +
+      '</div>';
+
+    var assigned = (inc.assignments || []).map(function (a) {
+      return esc(a.full_name) + ' <em class="muted-inline">(' + esc(roleLabel(a.role)) + ', ' +
+        (a.acknowledged_at ? 'acknowledged' : 'not yet acknowledged') + ')</em>';
+    }).join('<br>');
+
+    var details =
+      '<div class="info-section-title"><i class="fas fa-circle-info"></i> Incident Details</div>' +
+      '<div class="info-grid">' +
+        infoItem('Reference', esc(inc.reference_number)) +
+        infoItem('Category', esc(inc.category_name)) +
+        infoItem('Date', fmtDate(inc.incident_date)) +
+        infoItem('Time', esc(inc.incident_time || '—')) +
+        infoItem('Location', esc(inc.location_text) +
+          (inc.campus_location_name ? ' <em class="muted-inline">(' + esc(inc.campus_location_name) + ')</em>' : ''), true) +
+        infoItem('Description', '<span class="pre-wrap">' + esc(inc.description) + '</span>', true) +
+        infoItem('Reported By', esc(inc.reporter_name)) +
+        infoItem('Submitted', fmtStamp(inc.created_at)) +
+        (assigned ? infoItem('Assigned To', assigned, true) : '') +
+        (inc.resolution_summary ? infoItem('Resolution Summary', '<span class="pre-wrap">' + esc(inc.resolution_summary) + '</span>', true) : '') +
+        (inc.closure_summary ? infoItem('Closure Summary', '<span class="pre-wrap">' + esc(inc.closure_summary) + '</span>', true) : '') +
+        (inc.closed_at ? infoItem('Closed', fmtStamp(inc.closed_at) + (inc.closed_by_name ? ' by ' + esc(inc.closed_by_name) : ''), true) : '') +
+      '</div>';
+
+    var parties = '';
+    if (inc.parties && inc.parties.length) {
+      parties =
+        '<div class="info-section-title"><i class="fas fa-users"></i> Involved Parties</div>' +
+        '<ul class="party-list">' +
+        inc.parties.map(function (p) {
+          if (p.student_id && p.student_number) {
+            return '<li>' + esc(p.last_name + ', ' + p.first_name) + ' (' + esc(p.student_number) + ')</li>';
+          }
+          return '<li>' + esc(p.party_text || '(unnamed)') + '</li>';
+        }).join('') +
+        '</ul>';
+    }
+
+    var timeline = '';
+    if (inc.timeline && inc.timeline.length) {
+      timeline =
+        '<div class="info-section-title"><i class="fas fa-clock-rotate-left"></i> Activity Timeline</div>' +
+        '<div class="timeline-wrap">' +
+        inc.timeline.map(function (t) {
+          return (
+            '<div class="timeline-entry">' +
+              '<div class="timeline-dot"></div>' +
+              '<div class="timeline-body">' +
+                '<div class="timeline-meta">' +
+                  '<strong>' + esc(t.entry_type) + '</strong>' +
+                  ' &bull; ' + esc(t.actor_name) +
+                  (t.actor_role ? ' <span class="muted-inline">(' + esc(roleLabel(t.actor_role)) + ')</span>' : '') +
+                  ' &bull; <small class="muted-inline">' + fmtStamp(t.created_at) + '</small>' +
+                '</div>' +
+                '<div class="timeline-desc">' + esc(t.description) + '</div>' +
+                (t.follow_up_date
+                  ? '<div class="timeline-followup"><i class="fas fa-calendar-day"></i> Next follow-up: ' + fmtDate(t.follow_up_date) + '</div>'
+                  : '') +
+              '</div>' +
+            '</div>'
+          );
+        }).join('') +
+        '</div>';
+    }
+
+    return badges + details + parties +
+      '<div id="incidentAttachmentsPanel"></div>' +
+      timeline +
+      '<div id="incidentActionsPanel" class="incident-actions"></div>';
+  }
+
   async function viewIncident(id) {
     var modal    = document.getElementById('incidentDetailModal');
     var bodyEl   = document.getElementById('incidentDetailBody');
     var titleEl  = document.getElementById('incidentDetailTitle');
     if (!modal || !bodyEl) return;
 
-    if (titleEl) titleEl.innerHTML = '<i class="fas fa-file-circle-exclamation"></i> Incident Details';
-    bodyEl.innerHTML = '<p class="dash-muted-intro">Loading\u2026</p>';
-    modal.classList.add('open');
+    if (!modal.classList.contains('open')) {
+      if (titleEl) titleEl.innerHTML = '<i class="fas fa-file-circle-exclamation"></i> Incident Details';
+      bodyEl.innerHTML = '<p class="dash-muted-intro">Loading…</p>';
+      modal.classList.add('open');
+    }
 
     var r, inc;
     try {
@@ -175,271 +292,48 @@
     // ── Student role: trimmed view ──────────────────────────────────────────
     if (_currentRole === 'student') {
       bodyEl.innerHTML =
-        '<div style="margin-bottom:4px;">' +
+        '<div class="incident-badges">' +
           '<span class="status-pill ' + statusClass(inc.status) + '">' + esc(inc.status) + '</span>' +
         '</div>' +
-        '<div class="info-section-title" style="margin-top:14px;"><i class="fas fa-circle-info"></i> Incident Details</div>' +
+        '<div class="info-section-title"><i class="fas fa-circle-info"></i> Incident Details</div>' +
         '<div class="info-grid">' +
-          '<div class="info-item"><label>Reference</label><span>' + esc(inc.reference_number) + '</span></div>' +
-          '<div class="info-item"><label>Category</label><span>' + esc(inc.category_name) + '</span></div>' +
-          '<div class="info-item"><label>Date</label><span>' + fmtDate(inc.incident_date) + '</span></div>' +
-          '<div class="info-item"><label>Status</label><span>' + esc(inc.status) + '</span></div>' +
-          '<div class="info-item"><label>Submitted</label><span>' + esc((inc.created_at || '').replace('T', ' ').replace('Z', '')) + '</span></div>' +
+          infoItem('Reference', esc(inc.reference_number)) +
+          infoItem('Category', esc(inc.category_name)) +
+          infoItem('Date', fmtDate(inc.incident_date)) +
+          infoItem('Status', esc(inc.status)) +
+          infoItem('Submitted', fmtStamp(inc.created_at)) +
         '</div>';
       return;
     }
 
     // ── Full detail view (non-student) ───────────────────────────────────────
+    var me = await getMe();
+    bodyEl.innerHTML = buildDetailHtml(inc);
 
-    // Build parties list
-    var partiesHtml = '';
-    if (inc.parties && inc.parties.length) {
-      partiesHtml = '<div class="info-section-title"><i class="fas fa-users"></i> Involved Parties</div>' +
-        '<ul style="margin:0 0 12px;padding-left:18px;font-size:.88rem;">' +
-        inc.parties.map(function (p) {
-          if (p.student_id && p.student_number) {
-            return '<li>' + esc(p.last_name + ', ' + p.first_name) + ' (' + esc(p.student_number) + ')</li>';
-          }
-          return '<li>' + esc(p.party_text || '(unnamed)') + '</li>';
-        }).join('') +
-        '</ul>';
-    }
-
-    // Build timeline
-    var timelineHtml = '';
-    if (inc.timeline && inc.timeline.length) {
-      timelineHtml =
-        '<div class="info-section-title" style="margin-top:16px;"><i class="fas fa-clock-rotate-left"></i> Activity Timeline</div>' +
-        '<div class="timeline-wrap">' +
-        inc.timeline.map(function (t) {
-          return (
-            '<div class="timeline-entry">' +
-              '<div class="timeline-dot"></div>' +
-              '<div class="timeline-body">' +
-                '<div class="timeline-meta">' +
-                  '<strong>' + esc(t.entry_type) + '</strong>' +
-                  ' &bull; ' + esc(t.actor_name) +
-                  ' &bull; <small style="color:var(--muted);">' + esc((t.created_at || '').replace('T', ' ').replace('Z', '')) + '</small>' +
-                '</div>' +
-                '<div class="timeline-desc">' + esc(t.description) + '</div>' +
-              '</div>' +
-            '</div>'
-          );
-        }).join('') +
-        '</div>';
-    }
-
-    // Build attachments
-    var attachHtml = '';
-    if (inc.attachments && inc.attachments.length) {
-      attachHtml =
-        '<div class="info-section-title"><i class="fas fa-paperclip"></i> Attachments</div>' +
-        '<ul style="margin:0 0 12px;padding-left:18px;font-size:.88rem;">' +
-        inc.attachments.map(function (a) {
-          return '<li>' + esc(a.original_name) + ' <small style="color:var(--muted);">(' + Math.round(a.size_bytes / 1024) + ' KB)</small></li>';
-        }).join('') +
-        '</ul>';
-    }
-
-    var restrictedBadge = inc.is_restricted
-      ? '<span class="status-pill" style="background:#f9e5e5;color:#c0392b;margin-left:8px;">RESTRICTED</span>'
-      : '';
-
-    // ── Status transition buttons ────────────────────────────────────────────
-    var actionButtonsHtml = buildStatusButtons(inc.status, _currentRole, inc.id);
-
-    // ── Restrict toggle (sysadmin/schoolhead only) ───────────────────────────
-    var restrictHtml = '';
-    if (_currentRole === 'sysadmin' || _currentRole === 'schoolhead') {
-      var restrictLabel = inc.is_restricted ? 'Remove Restriction' : 'Restrict Incident';
-      var restrictActive = inc.is_restricted ? ' active' : '';
-      restrictHtml =
-        '<div class="incident-action-bar">' +
-          '<button class="incident-restrict-toggle' + restrictActive + '" data-action="restrict-toggle" data-id="' + inc.id + '" data-restricted="' + (inc.is_restricted ? '1' : '0') + '">' +
-            '<i class="fas fa-' + (inc.is_restricted ? 'unlock' : 'lock') + '"></i> ' + restrictLabel +
-          '</button>' +
-        '</div>';
-    }
-
-    bodyEl.innerHTML =
-      '<div style="margin-bottom:4px;">' +
-        '<span class="status-pill ' + statusClass(inc.status) + '">' + esc(inc.status) + '</span>' +
-        restrictedBadge +
-        (inc.severity ? ' <span class="incident-severity" data-severity="' + esc(inc.severity) + '">' + esc(inc.severity) + '</span>' : '') +
-      '</div>' +
-
-      '<div class="info-section-title" style="margin-top:14px;"><i class="fas fa-circle-info"></i> Incident Details</div>' +
-      '<div class="info-grid">' +
-        '<div class="info-item"><label>Reference</label><span>' + esc(inc.reference_number) + '</span></div>' +
-        '<div class="info-item"><label>Category</label><span>' + esc(inc.category_name) + '</span></div>' +
-        '<div class="info-item"><label>Date</label><span>' + fmtDate(inc.incident_date) + '</span></div>' +
-        '<div class="info-item"><label>Time</label><span>' + esc(inc.incident_time || '—') + '</span></div>' +
-        '<div class="info-item info-item-span"><label>Location</label><span>' + esc(inc.location_text) + (inc.campus_location_name ? ' <em style="color:var(--muted);">(' + esc(inc.campus_location_name) + ')</em>' : '') + '</span></div>' +
-        '<div class="info-item info-item-span"><label>Description</label><span style="white-space:pre-wrap;">' + esc(inc.description) + '</span></div>' +
-        '<div class="info-item"><label>Reported By</label><span>' + esc(inc.reporter_name) + '</span></div>' +
-        '<div class="info-item"><label>Submitted</label><span>' + esc((inc.created_at || '').replace('T', ' ').replace('Z', '')) + '</span></div>' +
-      '</div>' +
-
-      partiesHtml +
-      attachHtml +
-      timelineHtml +
-      (actionButtonsHtml ? '<div class="incident-action-bar" id="incidentActionBar">' + actionButtonsHtml + '</div>' : '') +
-      restrictHtml;
-
-    // Wire status transition buttons
-    wireStatusButtons(inc.id);
-
-    // Wire restrict toggle
-    wireRestrictToggle(inc.id);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // STATUS TRANSITION BUTTONS
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  function buildStatusButtons(status, role, incidentId) {
-    var buttons = [];
-    var canReview    = ['sysadmin', 'schoolhead', 'safetyofficer'].indexOf(role) !== -1;
-    var canAssign    = role === 'schoolhead';
-    var canRespond   = ['sysadmin', 'schoolhead', 'safetyofficer'].indexOf(role) !== -1;
-    var canClose      = ['sysadmin', 'schoolhead', 'safetyofficer'].indexOf(role) !== -1;
-
-    if (status === 'Submitted' && canReview) {
-      buttons.push({ label: 'Review &amp; Classify', icon: 'fa-magnifying-glass', action: 'review', to: 'Under Review' });
-    }
-    if (status === 'Under Review' && canAssign) {
-      buttons.push({ label: 'Assign', icon: 'fa-user-check', action: 'assign', to: 'Assigned' });
-    }
-    if (status === 'Assigned' && canRespond) {
-      buttons.push({ label: 'Acknowledge', icon: 'fa-circle-check', action: 'transition', to: 'In Progress' });
-    }
-    if (status === 'In Progress' && canRespond) {
-      buttons.push({ label: 'Mark For Follow-Up', icon: 'fa-clock', action: 'transition', to: 'For Follow-Up' });
-      buttons.push({ label: 'Resolve', icon: 'fa-circle-check', action: 'transition', to: 'Resolved' });
-    }
-    if (status === 'For Follow-Up' && canRespond) {
-      buttons.push({ label: 'Resume', icon: 'fa-arrow-rotate-left', action: 'transition', to: 'In Progress' });
-      buttons.push({ label: 'Resolve', icon: 'fa-circle-check', action: 'transition', to: 'Resolved' });
-    }
-    if (status === 'Resolved' && canClose) {
-      buttons.push({ label: 'Close Incident', icon: 'fa-lock', action: 'transition', to: 'Closed' });
-    }
-
-    if (!buttons.length) return '';
-
-    return buttons.map(function (b) {
-      return (
-        '<button class="btn-soft btn-sm" data-action="status-transition"' +
-          ' data-id="' + incidentId + '"' +
-          ' data-to="' + esc(b.to) + '"' +
-          ' data-transition-action="' + esc(b.action) + '"' +
-          ' title="Transition to ' + esc(b.to) + '">' +
-          '<i class="fas ' + esc(b.icon) + '"></i> ' + b.label +
-        '</button>'
-      );
-    }).join('');
-  }
-
-  function wireStatusButtons(incidentId) {
-    var bodyEl = document.getElementById('incidentDetailBody');
-    if (!bodyEl) return;
-    var btns = bodyEl.querySelectorAll('[data-action="status-transition"]');
-    btns.forEach(function (btn) {
-      btn.addEventListener('click', async function () {
-        var toStatus = btn.dataset.to;
-        var transitionAction = btn.dataset.transitionAction;
-        var errEl = document.getElementById('incidentTransitionError');
-        if (errEl) errEl.textContent = '';
-
-        btn.disabled = true;
-        try {
-          var r, d;
-          if (transitionAction === 'review') {
-            // Review & Classify calls the classify endpoint
-            r = await api.patch('/api/incidents/' + incidentId + '/classify', { severity: 'Moderate' });
-          } else if (transitionAction === 'assign') {
-            // Assign — schoolhead only (T-24 not implemented yet)
-            r = await api.post('/api/incidents/' + incidentId + '/assign', {});
-          } else {
-            // Generic status transition
-            r = await api.patch('/api/incidents/' + incidentId + '/status', { status: toStatus });
-          }
-          d = await r.json();
-          if (!r.ok) {
-            // Endpoint doesn't exist yet (T-22/T-24) — show graceful error
-            var msg = d.error || 'This action is not available yet.';
-            showTransitionError(msg);
-          } else {
-            // Success — refresh detail
-            viewIncident(incidentId);
-          }
-        } catch (e) {
-          showTransitionError('Network error. Please try again.');
-        }
-        btn.disabled = false;
+    // Attachment list, download links, and upload zone (T-21)
+    var attachEl = document.getElementById('incidentAttachmentsPanel');
+    if (attachEl && global.SentraAttachments) {
+      global.SentraAttachments.canManage().then(function (ok) {
+        global.SentraAttachments.renderDetail(attachEl, inc, {
+          canManage: ok,
+          readOnly:  inc.status === 'Closed' || !!inc.is_archived,
+        });
       });
-    });
-  }
-
-  function showTransitionError(msg) {
-    var bodyEl = document.getElementById('incidentDetailBody');
-    if (!bodyEl) return;
-    var existing = document.getElementById('incidentTransitionError');
-    if (existing) existing.remove();
-    var err = document.createElement('p');
-    err.id = 'incidentTransitionError';
-    err.className = 'error-msg';
-    err.textContent = msg;
-    err.style.marginTop = '8px';
-    var actionBar = document.getElementById('incidentActionBar');
-    if (actionBar) {
-      actionBar.appendChild(err);
-    } else {
-      bodyEl.appendChild(err);
     }
-    setTimeout(function () { if (err.parentNode) err.remove(); }, 5000);
-  }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RESTRICT TOGGLE
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  function wireRestrictToggle(incidentId) {
-    var bodyEl = document.getElementById('incidentDetailBody');
-    if (!bodyEl) return;
-    var btn = bodyEl.querySelector('[data-action="restrict-toggle"]');
-    if (!btn) return;
-
-    btn.addEventListener('click', async function () {
-      var currentlyRestricted = btn.dataset.restricted === '1';
-      var newRestricted = !currentlyRestricted;
-      var msg = newRestricted
-        ? 'Restrict this incident? It will be hidden from Teacher, Guidance, and Student lists.'
-        : 'Remove restriction? This incident will be visible to all authorised roles again.';
-
-      if (typeof confirmAction === 'function') {
-        confirmAction(msg, function () { doRestrictToggle(incidentId, btn, newRestricted); });
-      } else {
-        doRestrictToggle(incidentId, btn, newRestricted);
-      }
-    });
-  }
-
-  async function doRestrictToggle(incidentId, btn, newRestricted) {
-    try {
-      var r = await api.patch('/api/incidents/' + incidentId + '/restrict', { is_restricted: newRestricted });
-      var d = await r.json();
-      if (!r.ok) {
-        // Endpoint doesn't exist yet (T-22) — show graceful error
-        showTransitionError(d.error || 'Restrict toggle is not available yet.');
-        return;
-      }
-      // Success — refresh detail
-      viewIncident(incidentId);
-    } catch (e) {
-      showTransitionError('Network error. Please try again.');
+    // Response controls (T-24B); after any change, reload this view and the list
+    var actionsEl = document.getElementById('incidentActionsPanel');
+    if (actionsEl && global.SentraIncidentActions) {
+      global.SentraIncidentActions.render(actionsEl, inc, {
+        me: me,
+        onChange: function () {
+          viewIncident(id);
+          if (_listCfg) loadIncidentList(_listCfg);
+        },
+      });
     }
   }
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // SUBMISSION FORM
@@ -477,9 +371,9 @@
     var studentLookupWrap = document.getElementById('incidentFormStudentLookupWrap');
     if (role === 'student') {
       // Students use free-text only
-      if (studentLookupWrap) studentLookupWrap.style.display = 'none';
+      if (studentLookupWrap) studentLookupWrap.classList.add('u-hidden');
     } else {
-      if (studentLookupWrap) studentLookupWrap.style.display = '';
+      if (studentLookupWrap) studentLookupWrap.classList.remove('u-hidden');
       wireStudentLookup();
     }
 
@@ -543,13 +437,13 @@
     var listEl = document.getElementById('incidentPartyList');
     if (!listEl) return;
     if (!_parties.length) {
-      listEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">No parties added yet.</p>';
+      listEl.innerHTML = '<p class="party-empty">No parties added yet.</p>';
       return;
     }
     listEl.innerHTML = _parties.map(function (p, i) {
       return (
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-          '<span style="font-size:.88rem;">' + esc(p.display) + '</span>' +
+        '<div class="party-row">' +
+          '<span class="party-name">' + esc(p.display) + '</span>' +
           '<button type="button" class="btn-icon btn-danger" data-action="remove-party" data-idx="' + i + '" title="Remove">' +
             '<i class="fas fa-xmark"></i>' +
           '</button>' +
@@ -569,170 +463,22 @@
   // FILE UPLOAD ZONE
   // ─────────────────────────────────────────────────────────────────────────────
 
-  var ACCEPTED_MIME = ['image/jpeg', 'image/png', 'application/pdf'];
-  var ACCEPTED_EXT  = ['.jpg', '.jpeg', '.png', '.pdf'];
-  var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-  var MAX_FILES      = 3;
-
+  // The zone itself lives in attachments.js. Files are held here and uploaded
+  // only after POST /api/incidents has created the incident.
   function wireFileUpload() {
-    _files = [];
-
-    var dropzone = document.getElementById('incidentFileDropzone');
-    var fileInput = document.getElementById('incidentFileInput');
-    var errEl = document.getElementById('incidentFileError');
-    if (errEl) errEl.textContent = '';
-
-    if (!dropzone || !fileInput) return;
-
-    // Click to browse
-    dropzone.addEventListener('click', function () { fileInput.click(); });
-
-    // Drag and drop
-    dropzone.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      dropzone.classList.add('drag-over');
-    });
-    dropzone.addEventListener('dragleave', function () {
-      dropzone.classList.remove('drag-over');
-    });
-    dropzone.addEventListener('drop', function (e) {
-      e.preventDefault();
-      dropzone.classList.remove('drag-over');
-      handleFiles(e.dataTransfer.files);
+    if (!global.SentraAttachments) return;
+    _formUploadZone = global.SentraAttachments.createUploadZone({
+      dropzone:  document.getElementById('incidentFileDropzone'),
+      input:     document.getElementById('incidentFileInput'),
+      errorEl:   document.getElementById('incidentFileError'),
+      previewEl: document.getElementById('incidentFilePreview'),
     });
 
-    // File input change
-    fileInput.addEventListener('change', function () {
-      handleFiles(this.files);
-      this.value = ''; // reset so same file can be re-selected
+    // Hide the zone for roles without manage_attachments (e.g. Student)
+    var field = document.getElementById('incidentFileField');
+    global.SentraAttachments.canManage().then(function (ok) {
+      if (field) field.classList.toggle('u-hidden', !ok);
     });
-
-    renderFilePreview();
-  }
-
-  function handleFiles(fileList) {
-    var errEl = document.getElementById('incidentFileError');
-    if (errEl) errEl.textContent = '';
-
-    var files = Array.from(fileList);
-
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-
-      // Check max file count
-      if (_files.length >= MAX_FILES) {
-        if (errEl) errEl.textContent = 'Maximum ' + MAX_FILES + ' files allowed.';
-        break;
-      }
-
-      // Check file type
-      var validType = ACCEPTED_MIME.indexOf(f.type) !== -1;
-      if (!validType) {
-        // Also check by extension as fallback (some browsers don't set MIME for PDF)
-        var ext = '.' + (f.name.split('.').pop() || '').toLowerCase();
-        validType = ACCEPTED_EXT.indexOf(ext) !== -1;
-      }
-      if (!validType) {
-        if (errEl) errEl.textContent = '"' + f.name + '": Only JPG, PNG, and PDF files are accepted.';
-        continue;
-      }
-
-      // Check file size
-      if (f.size > MAX_FILE_SIZE) {
-        if (errEl) errEl.textContent = '"' + f.name + '": File exceeds the 5 MB size limit.';
-        continue;
-      }
-
-      _files.push(f);
-    }
-
-    renderFilePreview();
-  }
-
-  function renderFilePreview() {
-    var previewEl = document.getElementById('incidentFilePreview');
-    if (!previewEl) return;
-
-    if (!_files.length) {
-      previewEl.innerHTML = '';
-      return;
-    }
-
-    var html = '<div class="file-preview-list">';
-
-    _files.forEach(function (f, i) {
-      var sizeStr = f.size < 1024 ? f.size + ' B' : f.size < 1024 * 1024 ? Math.round(f.size / 1024) + ' KB' : (f.size / (1024 * 1024)).toFixed(1) + ' MB';
-      var isImage = f.type.indexOf('image/') === 0;
-      var icon = f.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image';
-
-      html +=
-        '<div class="file-preview-item" data-file-idx="' + i + '">' +
-          (isImage
-            ? '<img class="file-preview-thumb" alt="" data-file-idx="' + i + '" />'
-            : '<div class="file-preview-icon"><i class="fas ' + icon + '"></i></div>') +
-          '<div class="file-preview-info">' +
-            '<div class="file-preview-name">' + esc(f.name) + '</div>' +
-            '<div class="file-preview-size">' + sizeStr + '</div>' +
-          '</div>' +
-          '<button type="button" class="file-preview-remove" data-action="remove-file" data-idx="' + i + '" title="Remove">' +
-            '<i class="fas fa-xmark"></i>' +
-          '</button>' +
-        '</div>';
-    });
-
-    html += '</div>';
-    previewEl.innerHTML = html;
-
-    // Load image thumbnails
-    _files.forEach(function (f, i) {
-      if (f.type.indexOf('image/') === 0) {
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var img = previewEl.querySelector('.file-preview-thumb[data-file-idx="' + i + '"]');
-          if (img) img.src = e.target.result;
-        };
-        reader.readAsDataURL(f);
-      }
-    });
-
-    // Wire remove buttons
-    previewEl.querySelectorAll('[data-action="remove-file"]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _files.splice(parseInt(btn.dataset.idx, 10), 1);
-        renderFilePreview();
-      });
-    });
-  }
-
-  async function uploadFiles(incidentId) {
-    var warnEl = document.getElementById('incidentFileError');
-    if (!_files.length) return;
-
-    for (var i = 0; i < _files.length; i++) {
-      var f = _files[i];
-      try {
-        var formData = new FormData();
-        formData.append('file', f, f.name);
-        var r = await api.upload('/api/incidents/' + incidentId + '/attachments', formData);
-        // Endpoint doesn't exist yet (T-21) — 404 or 405 expected
-        if (!r.ok) {
-          // Graceful: don't block, just warn
-          if (warnEl) {
-            warnEl.textContent = 'Attachment upload is not available yet. Your incident was still submitted successfully.';
-          }
-          break;
-        }
-      } catch (e) {
-        if (warnEl) {
-          warnEl.textContent = 'Attachment upload failed. Your incident was still submitted successfully.';
-        }
-        break;
-      }
-    }
-
-    // Clear files after upload attempt
-    _files = [];
-    renderFilePreview();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -801,29 +547,41 @@
       return;
     }
 
-    if (submitBtn) submitBtn.disabled = false;
-
     if (!r.ok) {
+      if (submitBtn) submitBtn.disabled = false;
       if (errEl) errEl.textContent = d.error || 'Submission failed.';
       return;
     }
+
+    // Upload attachments now that the incident exists (T-21)
+    var attachNote = '';
+    var pendingFiles = _formUploadZone ? _formUploadZone.files() : [];
+    if (pendingFiles.length && d.id) {
+      _formUploadZone.setDisabled(true);
+      var up = await global.SentraAttachments.uploadAll(d.id, pendingFiles);
+      _formUploadZone.setDisabled(false);
+      _formUploadZone.clear();
+      attachNote = ' Attachments uploaded: ' + up.uploaded.length + ' of ' + pendingFiles.length + '.';
+      if (up.failed.length) {
+        _formUploadZone.setError(
+          global.SentraAttachments.describeFailures(up.failed) +
+          ' The incident was saved. Open it from the list to add files again.'
+        );
+      }
+    } else if (_formUploadZone) {
+      _formUploadZone.clear();
+    }
+
+    if (submitBtn) submitBtn.disabled = false;
 
     // Show confirmation
     var successEl = document.getElementById('incidentFormSuccess');
     if (successEl) {
       successEl.innerHTML =
-        '<i class="fas fa-check-circle" style="color:#27ae60;"></i> ' +
-        'Incident submitted. Reference number: <strong>' + esc(d.reference_number || '') + '</strong>';
-      successEl.style.display = '';
-    }
-
-    // Attempt file uploads (endpoint may not exist yet — T-21)
-    var incidentId = d.id || (d.reference_number ? d.reference_number : null);
-    if (incidentId && _files.length) {
-      await uploadFiles(incidentId);
-    } else {
-      _files = [];
-      renderFilePreview();
+        '<i class="fas fa-check-circle icon-success"></i> ' +
+        'Incident submitted. Reference number: <strong>' + esc(d.reference_number || '') + '</strong>' +
+        esc(attachNote);
+      successEl.classList.remove('u-hidden');
     }
 
     // Reset form
@@ -837,7 +595,7 @@
 
     // Refresh list after short delay
     setTimeout(function () {
-      if (successEl) successEl.style.display = 'none';
+      if (successEl) successEl.classList.add('u-hidden');
       if (listCfg) loadIncidentList(listCfg);
     }, 3000);
   }
@@ -881,6 +639,7 @@
       filterFromId:     cfg.filterFromId     || 'incidentFilterFrom',
       filterToId:       cfg.filterToId       || 'incidentFilterTo',
     };
+    _listCfg = listCfg;
 
     // Wire list section only once
     var listKey = listSectionId;

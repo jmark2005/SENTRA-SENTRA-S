@@ -6,6 +6,7 @@
   <title>Guidance Dashboard — SENTRA</title>
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="responsive.css" />
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
 </head>
 <body class="dash-page">
@@ -41,7 +42,7 @@
         <div class="dash-topbar-actions">
           <button class="dash-bell" id="notifBell" title="Notifications" type="button">
             <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+            <span class="notif-badge u-hidden" id="notifBadge"></span>
           </button>
         </div>
         <div class="dash-user">
@@ -96,69 +97,69 @@
             <div class="panel-card-header">
               <div class="panel-card-title"><i class="fas fa-file-circle-plus"></i> Submit Incident Report</div>
             </div>
-            <p class="dash-muted-intro">Report a safety incident. All fields marked with <span style="color:#c0392b;">*</span> are required.</p>
-            <p id="incidentFormSuccess" class="settings-success-msg" style="display:none;"></p>
+            <p class="dash-muted-intro">Report a safety incident. All fields marked with <span class="req-mark">*</span> are required.</p>
+            <p id="incidentFormSuccess" class="settings-success-msg u-hidden"></p>
             <p id="incidentFormError"   class="error-msg"></p>
             <form id="incidentSubmitForm" autocomplete="off">
               <div class="field-row">
                 <div class="field">
-                  <label>Category <span style="color:#c0392b;">*</span></label>
-                  <select id="incidentFormCategory" class="filter-select" style="width:100%;" required>
+                  <label>Category <span class="req-mark">*</span></label>
+                  <select id="incidentFormCategory" class="filter-select u-w-full" required>
                     <option value="">Loading…</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label>Date of Incident <span style="color:#c0392b;">*</span></label>
-                  <input id="incidentFormDate" type="date" class="search-input" style="width:100%;" required />
+                  <label>Date of Incident <span class="req-mark">*</span></label>
+                  <input id="incidentFormDate" type="date" class="search-input u-w-full" required />
                 </div>
                 <div class="field">
-                  <label>Time of Incident <span style="color:#c0392b;">*</span></label>
-                  <input id="incidentFormTime" type="time" class="search-input" style="width:100%;" required />
+                  <label>Time of Incident <span class="req-mark">*</span></label>
+                  <input id="incidentFormTime" type="time" class="search-input u-w-full" required />
                 </div>
               </div>
               <div class="field">
-                <label>Location (text) <span style="color:#c0392b;">*</span></label>
-                <input id="incidentFormLocation" type="text" class="search-input" style="width:100%;" maxlength="255" placeholder="e.g. Corridor near Room 203" required />
+                <label>Location (text) <span class="req-mark">*</span></label>
+                <input id="incidentFormLocation" type="text" class="search-input u-w-full" maxlength="255" placeholder="e.g. Corridor near Room 203" required />
               </div>
               <div class="field" id="incidentFormLocFieldWrap">
-                <label>Campus Location <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
-                <select id="incidentFormCampusLoc" class="filter-select" style="width:100%;">
+                <label>Campus Location <span class="field-hint">(optional)</span></label>
+                <select id="incidentFormCampusLoc" class="filter-select u-w-full">
                   <option value="">— Select location (optional) —</option>
                 </select>
               </div>
               <div class="field">
-                <label>Description <span style="color:#c0392b;">*</span></label>
-                <textarea id="incidentFormDescription" class="modal-textarea" rows="4" style="width:100%;resize:vertical;" placeholder="Describe the incident in detail…" required></textarea>
+                <label>Description <span class="req-mark">*</span></label>
+                <textarea id="incidentFormDescription" class="modal-textarea" rows="4" placeholder="Describe the incident in detail…" required></textarea>
               </div>
               <!-- Involved Parties -->
               <div class="field" id="incidentFormPartySection">
-                <label>Involved Parties <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional)</span></label>
+                <label>Involved Parties <span class="field-hint">(optional)</span></label>
                 <div id="incidentFormStudentLookupWrap">
-                  <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input id="incidentPartyStudentNum" type="text" class="search-input" placeholder="Student number lookup…" style="flex:1;" />
+                  <div class="inc-party-row">
+                    <input id="incidentPartyStudentNum" type="text" class="search-input u-flex-1" placeholder="Student number lookup…" />
                     <button type="button" class="btn-soft btn-sm" id="incidentPartyLookupBtn"><i class="fas fa-search"></i> Find</button>
                   </div>
-                  <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input id="incidentPartyFreeText" type="text" class="search-input" placeholder="Free-text party (e.g. Unknown visitor)…" style="flex:1;" maxlength="100" />
+                  <div class="inc-party-row">
+                    <input id="incidentPartyFreeText" type="text" class="search-input u-flex-1" placeholder="Free-text party (e.g. Unknown visitor)…" maxlength="100" />
                     <button type="button" class="btn-soft btn-sm" id="incidentPartyAddFreeBtn"><i class="fas fa-plus"></i> Add</button>
                   </div>
-                  <p id="incidentPartyError" class="error-msg" style="font-size:.82rem;"></p>
+                  <p id="incidentPartyError" class="error-msg"></p>
                 </div>
                 <div id="incidentPartyList"></div>
               </div>
               <!-- File Upload Zone -->
-              <div class="field">
-                <label>Attachments <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(optional, max 3 files, 5&nbsp;MB each)</span></label>
+              <div class="field" id="incidentFileField">
+                <label>Attachments <span class="field-hint">(optional, max 3 files, 5&nbsp;MB each)</span></label>
                 <div class="file-dropzone" id="incidentFileDropzone">
                   <i class="fas fa-cloud-arrow-up"></i>
                   <span>Click to upload or drag &amp; drop</span>
                   <small>JPG, PNG, PDF — max 5 MB per file, up to 3 files</small>
                 </div>
-                <input type="file" id="incidentFileInput" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" multiple />
-                <p id="incidentFileError" class="error-msg" style="font-size:.82rem;"></p>
+                <input type="file" id="incidentFileInput" class="u-hidden" accept=".jpg,.jpeg,.png,.pdf" multiple />
+                <p id="incidentFileError" class="error-msg" role="alert"></p>
                 <div id="incidentFilePreview"></div>
               </div>
-              <div class="modal-footer" style="padding:0;margin-top:16px;">
+              <div class="modal-footer footer-flush">
                 <button type="submit" class="btn-maroon btn-sm" id="incidentFormSubmitBtn">
                   <i class="fas fa-paper-plane"></i> Submit Report
                 </button>
@@ -207,22 +208,12 @@
 
         <!-- REFERRALS -->
         <section class="section-panel" id="referrals">
-          <div class="placeholder-panel">
-            <div class="ph-icon"><i class="fas fa-hand-holding-heart"></i></div>
-            <h3>Support Referrals</h3>
-            <p>Submit and manage student support referrals. Enabled in T-27B.</p>
-            <span class="ph-soon">Coming Soon</span>
-          </div>
+          <div id="referralsRoot" class="referrals-root"></div>
         </section>
 
         <!-- ATTENDANCE -->
         <section class="section-panel" id="attendance">
-          <div class="placeholder-panel">
-            <div class="ph-icon"><i class="fas fa-calendar-check"></i></div>
-            <h3>Attendance</h3>
-            <p>View attendance summaries for your assigned classes. Enabled in T-29B.</p>
-            <span class="ph-soon">Coming Soon</span>
-          </div>
+          <div id="attendanceSummaryRoot" class="attendance-root"></div>
         </section>
 
         <!-- STUDENTS -->
@@ -256,6 +247,11 @@
             </p>
             <img src="blueprint.svg" alt="School Facility Map" class="facility-map-img" />
           </div>
+        </section>
+
+        <!-- REPORTS (T-34B) -->
+        <section class="section-panel" id="reports">
+          <div id="reportsRoot" class="attendance-root"></div>
         </section>
 
       </main>
@@ -328,7 +324,14 @@
   <script src="/js/api.js" defer></script>
   <script src="/js/dashboard-common.js" defer></script>
   <script src="/js/campus-locations.js" defer></script>
+  <script src="/js/attachments.js" defer></script>
+  <script src="/js/incident-actions.js" defer></script>
   <script src="/js/incidents.js" defer></script>
+  <script src="/js/referral-detail.js" defer></script>
+  <script src="/js/referrals.js" defer></script>
+  <script src="/js/attendance-summary.js" defer></script>
+  <script src="/js/dashboard-summary.js" defer></script>
+  <script src="/js/reports.js" defer></script>
   <script src="/js/dashboard-guidance.js" defer></script>
 </body>
 </html>

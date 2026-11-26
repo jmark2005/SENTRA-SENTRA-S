@@ -73,7 +73,7 @@
     }).join('');
 
     _container.innerHTML =
-      '<form id="auditFilterForm" class="panel-card-actions" style="flex-wrap:wrap;margin-bottom:16px;">' +
+      '<form id="auditFilterForm" class="panel-card-actions audit-filter-form">' +
         '<input type="date" id="auditFrom" class="filter-select" title="Date from" />' +
         '<input type="date" id="auditTo"   class="filter-select" title="Date to" />' +
         '<input type="text" id="auditActor" class="search-input" placeholder="Actor name…" />' +
@@ -103,9 +103,9 @@
         '</table>' +
       '</div>' +
 
-      '<div id="auditPagination" class="panel-card-actions" style="justify-content:flex-end;margin-top:12px;">' +
+      '<div id="auditPagination" class="panel-card-actions audit-pagination">' +
         '<button id="auditPrevBtn" class="btn-soft btn-sm" disabled><i class="fas fa-chevron-left"></i> Previous</button>' +
-        '<span id="auditPageInfo" class="table-meta" style="align-self:center;"></span>' +
+        '<span id="auditPageInfo" class="table-meta audit-page-info"></span>' +
         '<button id="auditNextBtn" class="btn-soft btn-sm" disabled>Next <i class="fas fa-chevron-right"></i></button>' +
       '</div>';
 
@@ -203,14 +203,14 @@
       if (r.old_values !== null && r.old_values !== undefined) {
         oldHtml =
           '<details><summary>Old</summary>' +
-          '<pre style="font-size:.75rem;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">' +
+          '<pre class="audit-json">' +
           escHtml(jsonDetails(r.old_values)) +
           '</pre></details>';
       }
       if (r.new_values !== null && r.new_values !== undefined) {
         newHtml =
           '<details><summary>New</summary>' +
-          '<pre style="font-size:.75rem;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">' +
+          '<pre class="audit-json">' +
           escHtml(jsonDetails(r.new_values)) +
           '</pre></details>';
       }
@@ -227,10 +227,10 @@
 
       return (
         '<tr>' +
-          '<td style="white-space:nowrap;">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
+          '<td class="u-nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
           '<td>' + escHtml(r.actor_name || '—') + '</td>' +
           '<td>' + escHtml(r.actor_role || '—') + '</td>' +
-          '<td><code style="font-size:.8rem;">' + escHtml(r.action_type || '—') + '</code></td>' +
+          '<td><code class="audit-action-code">' + escHtml(r.action_type || '—') + '</code></td>' +
           '<td>' + targetHtml + '</td>' +
           '<td>' + detailsHtml + '</td>' +
         '</tr>'

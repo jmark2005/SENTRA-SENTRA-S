@@ -187,22 +187,42 @@
   /* ------------------------------------------------------------------ */
   function initSidebarToggle() {
     var sidebar  = document.getElementById('dashSidebar');
-    var backdrop = document.getElementById('dashBackdrop');
     var toggle   = document.getElementById('menuToggle');
-    if (!sidebar || !backdrop || !toggle) return;
+    if (!sidebar || !toggle) return;
+
+    // Prefer the HTML-stamped dashBackdrop; fall back to a dynamically
+    // created .sidebar-overlay so pages without the backdrop element still
+    // get an overlay that closes the sidebar on tap.
+    var backdrop = document.getElementById('dashBackdrop');
+    var overlay  = document.querySelector('.sidebar-overlay');
+
+    if (!backdrop && !overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'sidebar-overlay';
+      document.body.appendChild(overlay);
+    }
+
+    var toggleSidebar = function (open) {
+      sidebar.classList.toggle('open', open);
+      if (backdrop) backdrop.classList.toggle('active', open);
+      if (overlay)  overlay.classList.toggle('visible', open);
+    };
 
     toggle.addEventListener('click', function () {
-      sidebar.classList.add('open');
-      backdrop.classList.add('active');
+      toggleSidebar(!sidebar.classList.contains('open'));
     });
-    backdrop.addEventListener('click', closeSidebarMobile);
+
+    if (backdrop) backdrop.addEventListener('click', function () { toggleSidebar(false); });
+    if (overlay)  overlay.addEventListener('click',  function () { toggleSidebar(false); });
   }
 
   function closeSidebarMobile() {
     var sidebar  = document.getElementById('dashSidebar');
     var backdrop = document.getElementById('dashBackdrop');
+    var overlay  = document.querySelector('.sidebar-overlay');
     if (sidebar)  sidebar.classList.remove('open');
     if (backdrop) backdrop.classList.remove('active');
+    if (overlay)  overlay.classList.remove('visible');
   }
 
   /* ------------------------------------------------------------------ */
@@ -218,9 +238,9 @@
     }).then(function (user) {
       if (!user) return;
 
-      // Role guard
+      // Role guard (GET /api/auth/me returns the role name as `role`)
       if (config.allowedRoles && config.allowedRoles.length) {
-        if (config.allowedRoles.indexOf(user.role_name) === -1) {
+        if (config.allowedRoles.indexOf(user.role) === -1) {
           window.location.href = 'login.html';
           return;
         }
@@ -231,7 +251,7 @@
       var avatarEl = document.querySelector('.dash-avatar');
 
       if (nameEl)   nameEl.textContent   = user.full_name || user.username || '';
-      if (roleEl)   roleEl.textContent   = ROLE_LABELS[user.role_name] || user.role_name || '';
+      if (roleEl)   roleEl.textContent   = ROLE_LABELS[user.role] || user.role || '';
       if (avatarEl) avatarEl.textContent = getInitials(user.full_name || user.username || '');
 
       return user;
@@ -309,11 +329,158 @@
       var count = data.unread_count || 0;
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : String(count);
-        badge.style.display = 'flex';
+        badge.classList.remove('u-hidden');
       } else {
-        badge.style.display = 'none';
+        badge.classList.add('u-hidden');
       }
+      renderEmergencyBanner(data.emergency_alerts || []);
     }).catch(function () { /* silent */ });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Emergency Alerts (T-32)                                             */
+  /*  Banner for unread alerts (fed by the 30 s count poll) and, for     */
+  /*  users with send_emergency_alert, a topbar button + send dialog.    */
+  /* ------------------------------------------------------------------ */
+  var EMERGENCY_DISCLAIMER = 'Sending this alert does not replace official emergency procedures. ' +
+    'Contact emergency services directly.';
+
+  function renderEmergencyBanner(alerts) {
+    var banner = document.getElementById('emergencyBanner');
+    if (!alerts.length) {
+      if (banner) banner.remove();
+      return;
+    }
+    if (!banner) {
+      var main = document.querySelector('.dash-main');
+      var topbar = document.querySelector('.dash-topbar');
+      if (!main) return;
+      banner = document.createElement('div');
+      banner.id = 'emergencyBanner';
+      banner.className = 'emergency-banner';
+      banner.setAttribute('role', 'alert');
+      if (topbar && topbar.parentNode === main) topbar.insertAdjacentElement('afterend', banner);
+      else main.insertBefore(banner, main.firstChild);
+      banner.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-ack-alert]');
+        if (!btn) return;
+        btn.disabled = true;
+        api.patch('/api/notifications/' + btn.getAttribute('data-ack-alert') + '/read', {})
+          .then(function () { pollNotifCount(); })
+          .catch(function () { btn.disabled = false; });
+      });
+    }
+    var latest = alerts[0];
+    var key = alerts.map(function (a) { return a.id; }).join(',');
+    if (banner.getAttribute('data-alerts') === key) return;
+    banner.setAttribute('data-alerts', key);
+    banner.innerHTML =
+      '<div class="emergency-banner-icon"><i class="fas fa-triangle-exclamation"></i></div>' +
+      '<div class="emergency-banner-body">' +
+        '<div class="emergency-banner-title">' + escapeHtml(latest.title) +
+          ' <span class="emergency-banner-time">' + formatRelativeTime(latest.created_at) + '</span>' +
+          (alerts.length > 1 ? ' <span class="emergency-banner-more">+' + (alerts.length - 1) + ' more</span>' : '') +
+        '</div>' +
+        '<div class="emergency-banner-msg">' + escapeHtml(latest.message) + '</div>' +
+        '<div class="emergency-banner-note">Follow official emergency procedures. This in-app alert does not replace them.</div>' +
+      '</div>' +
+      '<button type="button" class="emergency-banner-ack" data-ack-alert="' + escapeHtml(String(latest.id)) + '">' +
+        '<i class="fas fa-check"></i> Acknowledge</button>';
+  }
+
+  var _emergencyModal = null;
+
+  function ensureEmergencyModal() {
+    if (_emergencyModal) return _emergencyModal;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'emergencyAlertModal';
+    overlay.innerHTML =
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="emergencyAlertTitle">' +
+        '<div class="modal-header">' +
+          '<h3 id="emergencyAlertTitle"><i class="fas fa-triangle-exclamation"></i> Send Emergency Alert</h3>' +
+          '<button class="modal-close" type="button" data-close aria-label="Close"><i class="fas fa-xmark"></i></button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+          '<p class="emergency-disclaimer"><i class="fas fa-circle-exclamation"></i> ' + EMERGENCY_DISCLAIMER + '</p>' +
+          '<div data-form>' +
+            '<div class="field"><label for="emergencyAlertMessage">Alert message (required)</label>' +
+              '<textarea id="emergencyAlertMessage" data-message rows="4" maxlength="500" ' +
+              'placeholder="What is happening, where, and what staff should do"></textarea></div>' +
+            '<p class="ia-note">Sent in-app to every active account in the roles set under System Settings.</p>' +
+            '<p class="error-msg" data-error role="alert"></p>' +
+          '</div>' +
+          '<p class="settings-success-msg u-hidden" data-done role="status"></p>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+          '<button class="btn-soft btn-sm" type="button" data-close>Close</button>' +
+          '<button class="btn-maroon btn-sm btn-emergency-send" type="button" data-send>' +
+            '<i class="fas fa-paper-plane"></i> Send Alert</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    var m = {
+      overlay: overlay,
+      form:    overlay.querySelector('[data-form]'),
+      message: overlay.querySelector('[data-message]'),
+      error:   overlay.querySelector('[data-error]'),
+      done:    overlay.querySelector('[data-done]'),
+      send:    overlay.querySelector('[data-send]'),
+    };
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay || e.target.closest('[data-close]')) overlay.classList.remove('open');
+    });
+    m.send.addEventListener('click', function () {
+      m.error.textContent = '';
+      m.send.disabled = true;
+      api.post('/api/notifications/emergency', { message: m.message.value }).then(function (res) {
+        return res.json().then(function (body) { return { ok: res.ok, body: body }; });
+      }).then(function (r) {
+        if (!r.ok) {
+          m.error.textContent = r.body.error || 'The alert could not be sent.';
+          m.send.disabled = false;
+          return;
+        }
+        m.form.classList.add('u-hidden');
+        m.send.classList.add('u-hidden');
+        m.done.textContent = 'Emergency Alert sent to ' + r.body.recipients + ' account' +
+          (r.body.recipients === 1 ? '' : 's') + '. Remember to follow official emergency procedures.';
+        m.done.classList.remove('u-hidden');
+        pollNotifCount();
+      }).catch(function () {
+        m.error.textContent = 'Network error. The alert was not sent.';
+        m.send.disabled = false;
+      });
+    });
+    _emergencyModal = m;
+    return m;
+  }
+
+  function openEmergencyModal() {
+    var m = ensureEmergencyModal();
+    m.message.value = '';
+    m.error.textContent = '';
+    m.done.classList.add('u-hidden');
+    m.form.classList.remove('u-hidden');
+    m.send.classList.remove('u-hidden');
+    m.send.disabled = false;
+    m.overlay.classList.add('open');
+    m.message.focus();
+  }
+
+  function initEmergencyButton(user) {
+    if (!user || (user.permissions || []).indexOf('send_emergency_alert') === -1) return;
+    if (document.getElementById('emergencyAlertBtn')) return;
+    var actions = document.querySelector('.dash-topbar-actions');
+    if (!actions) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'emergencyAlertBtn';
+    btn.className = 'dash-emergency-btn';
+    btn.title = 'Send an Emergency Alert';
+    btn.innerHTML = '<i class="fas fa-triangle-exclamation"></i><span>Emergency Alert</span>';
+    btn.addEventListener('click', openEmergencyModal);
+    actions.insertBefore(btn, actions.firstChild);
   }
 
   function openNotifDrawer() {
@@ -339,8 +506,9 @@
     api.get('/api/notifications').then(function (res) {
       if (!res.ok) throw new Error('Failed to load');
       return res.json();
-    }).then(function (items) {
-      renderNotifList(items);
+    }).then(function (body) {
+      // GET /api/notifications returns { data: [...] }
+      renderNotifList(body && body.data ? body.data : body);
     }).catch(function () {
       if (listEl) listEl.innerHTML = '<p class="dash-muted-intro">Could not load notifications.</p>';
     });
@@ -357,7 +525,7 @@
 
     var html = items.map(function (n) {
       var icon = NOTIF_ICONS[n.type] || 'fa-bell';
-      var unreadClass = n.is_read ? '' : ' unread';
+      var unreadClass = (n.is_read ? '' : ' unread') + (n.type === 'Emergency Alert' ? ' emergency' : '');
       return (
         '<div class="notif-item' + unreadClass + '" data-notif-id="' + escapeHtml(String(n.id)) + '" data-notif-link="' + escapeHtml(n.link || '') + '">' +
           '<div class="notif-item-header">' +
@@ -532,7 +700,7 @@
     initSessionWarning();
     initOverviewShortcuts(config);
     initDomainHooks(config);
-    loadUserInfo(config);
+    loadUserInfo(config).then(initEmergencyButton);
   }
 
   /* ------------------------------------------------------------------ */

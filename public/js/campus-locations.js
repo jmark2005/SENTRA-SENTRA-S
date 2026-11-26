@@ -14,7 +14,7 @@
 
   // ── Escape helper ─────────────────────────────────────────────────────────
   function esc(v) {
-    return String(v === null || v === undefined ? '')
+    return String(v === null || v === undefined ? '' : v)
       .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/</g, '&lt;')
